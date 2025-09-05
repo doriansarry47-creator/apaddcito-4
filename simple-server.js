@@ -211,7 +211,7 @@ app.get('/api/test-db', async (req, res) => {
 // Initialize database tables
 app.get('/api/init-db', async (req, res) => {
   try {
-    // Create tables if they don't exist
+    // Create tables if they don't exist - order matters due to potential dependencies
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -248,6 +248,24 @@ app.get('/api/init-db', async (req, res) => {
     `);
 
     await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS psycho_education_content (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        title VARCHAR NOT NULL,
+        content TEXT NOT NULL,
+        category VARCHAR NOT NULL,
+        type VARCHAR DEFAULT 'article',
+        difficulty VARCHAR DEFAULT 'beginner',
+        estimated_read_time INTEGER,
+        image_url VARCHAR,
+        video_url VARCHAR,
+        audio_url VARCHAR,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS craving_entries (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id VARCHAR NOT NULL,
@@ -263,11 +281,50 @@ app.get('/api/init-db', async (req, res) => {
       CREATE TABLE IF NOT EXISTS exercise_sessions (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id VARCHAR NOT NULL,
-        exercise_id VARCHAR,
+        exercise_id VARCHAR NOT NULL,
         duration INTEGER,
         completed BOOLEAN DEFAULT false,
-        notes TEXT,
+        craving_before INTEGER,
+        craving_after INTEGER,
         created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS beck_analyses (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR NOT NULL,
+        situation TEXT,
+        automatic_thoughts TEXT,
+        emotions TEXT,
+        emotion_intensity INTEGER,
+        rational_response TEXT,
+        new_feeling TEXT,
+        new_intensity INTEGER,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_badges (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR NOT NULL,
+        badge_type VARCHAR NOT NULL,
+        earned_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_stats (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR NOT NULL,
+        exercises_completed INTEGER DEFAULT 0,
+        total_duration INTEGER DEFAULT 0,
+        current_streak INTEGER DEFAULT 0,
+        longest_streak INTEGER DEFAULT 0,
+        average_craving INTEGER,
+        updated_at TIMESTAMP DEFAULT NOW(),
+        CONSTRAINT user_stats_user_id_unique UNIQUE(user_id)
       );
     `);
 
