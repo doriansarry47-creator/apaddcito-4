@@ -1,0 +1,22 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+  color: var(--primary);
+}
+
+h2 {
+  font-size: 1.5em;
+  color: var(--muted-foreground);
+  margin-bottom: 2rem;
+}
+
+.card {
+  padding: 2em;
+}
