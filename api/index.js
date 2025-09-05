@@ -12,19 +12,17 @@ import {
   psychoEducationContent,
   cravingEntries,
   exerciseSessions 
-} from './shared/schema.js';
+} from '../shared/schema.js';
 
 // Configure Neon
 neonConfig.webSocketConstructor = ws;
 
 const app = express();
-const port = 3000;
 
 // Database configuration
 const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_vRJU7LlnYG1y@ep-soft-bush-ab0hbww0-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
 
-console.log('🚀 Starting Apaddicto server...');
-console.log('📊 Database URL:', DATABASE_URL.replace(/:[^:@]*@/, ':****@'));
+console.log('🚀 Starting Apaddicto API server...');
 
 let db;
 
@@ -34,7 +32,6 @@ try {
   console.log('✅ Database initialized successfully');
 } catch (error) {
   console.error('❌ Database initialization failed:', error);
-  process.exit(1);
 }
 
 // Middleware
@@ -51,6 +48,7 @@ app.use(
     secret: process.env.SESSION_SECRET || 'Apaddicto2024SecretKey',
     resave: false,
     saveUninitialized: false,
+    name: 'apaddicto_session',
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
     },
@@ -82,18 +80,33 @@ class AuthService {
   }
 
   static async getUserByEmail(email) {
-    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    return result[0] || null;
+    try {
+      const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      return result[0] || null;
+    } catch (error) {
+      console.error('Error getting user by email:', error);
+      return null;
+    }
   }
 
   static async createUser(userData) {
-    const result = await db.insert(users).values(userData).returning();
-    return result[0];
+    try {
+      const result = await db.insert(users).values(userData).returning();
+      return result[0];
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
   }
 
   static async getUserById(id) {
-    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-    return result[0] || null;
+    try {
+      const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+      return result[0] || null;
+    } catch (error) {
+      console.error('Error getting user by ID:', error);
+      return null;
+    }
   }
 }
 
@@ -121,7 +134,7 @@ function requireAdmin(req, res, next) {
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
-    service: 'apaddicto-server',
+    service: 'apaddicto-api',
     timestamp: new Date().toISOString(),
     database: 'connected'
   });
@@ -177,31 +190,33 @@ app.post('/api/auth/register', async (req, res) => {
       password: hashedPassword,
       firstName: firstName || null,
       lastName: lastName || null,
-      role: role || 'patient',
-      isActive: true,
-      createdAt: new Date()
+      role: role || 'patient'
     });
 
-    // Set session
+    // Create session
     req.session.user = {
       id: newUser.id,
       email: newUser.email,
       firstName: newUser.firstName,
       lastName: newUser.lastName,
-      role: newUser.role,
+      role: newUser.role
     };
 
     console.log('✅ User registered successfully:', email);
     
-    res.json({ 
-      user: req.session.user, 
-      message: "Inscription réussie" 
+    res.json({
+      message: 'Utilisateur créé avec succès',
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        role: newUser.role
+      }
     });
   } catch (error) {
-    console.error('❌ Registration error:', error);
-    res.status(500).json({ 
-      message: error.message || "Erreur lors de l'inscription" 
-    });
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Erreur lors de la création du compte' });
   }
 });
 
@@ -209,13 +224,13 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    console.log('🔐 Login attempt for:', email);
+    console.log('🔑 Login attempt for:', email);
     
     if (!email || !password) {
-      return res.status(400).json({ message: "Email et mot de passe requis" });
+      return res.status(400).json({ message: 'Email et mot de passe requis' });
     }
 
-    // Find user by email
+    // Get user
     const user = await AuthService.getUserByEmail(email);
     if (!user) {
       return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
@@ -227,42 +242,39 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
     }
 
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(401).json({ message: 'Compte désactivé' });
-    }
-
-    // Set session
+    // Create session
     req.session.user = {
       id: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role,
+      role: user.role
     };
 
     console.log('✅ User logged in successfully:', email);
 
-    res.json({ 
-      user: req.session.user, 
-      message: "Connexion réussie" 
+    res.json({
+      message: 'Connexion réussie',
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      }
     });
   } catch (error) {
-    console.error('❌ Login error:', error);
-    res.status(500).json({ 
-      message: error.message || "Erreur lors de la connexion" 
-    });
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Erreur lors de la connexion' });
   }
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  const userEmail = req.session?.user?.email;
   req.session.destroy((err) => {
     if (err) {
       console.error('Logout error:', err);
       return res.status(500).json({ message: 'Erreur lors de la déconnexion' });
     }
-    console.log('👋 User logged out:', userEmail);
     res.json({ message: 'Déconnexion réussie' });
   });
 });
@@ -271,30 +283,10 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json({ user: req.session.user });
 });
 
-// User management routes
-app.get('/api/users', requireAdmin, async (req, res) => {
-  try {
-    const allUsers = await db.select({
-      id: users.id,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      role: users.role,
-      isActive: users.isActive,
-      createdAt: users.createdAt
-    }).from(users);
-    
-    res.json(allUsers);
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Erreur lors de la récupération des utilisateurs' });
-  }
-});
-
 // Exercise routes
 app.get('/api/exercises', requireAuth, async (req, res) => {
   try {
-    const allExercises = await db.select().from(exercises);
+    const allExercises = await db.select().from(exercises).where(eq(exercises.isActive, true));
     res.json(allExercises);
   } catch (error) {
     console.error('Error fetching exercises:', error);
@@ -324,6 +316,40 @@ app.post('/api/exercises', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error creating exercise:', error);
     res.status(500).json({ message: 'Erreur lors de la création de l\'exercice' });
+  }
+});
+
+// Psycho-education routes
+app.get('/api/psycho-education', requireAuth, async (req, res) => {
+  try {
+    const content = await db.select().from(psychoEducationContent).where(eq(psychoEducationContent.isActive, true));
+    res.json(content);
+  } catch (error) {
+    console.error('Error fetching psycho-education content:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération du contenu' });
+  }
+});
+
+app.post('/api/psycho-education', requireAdmin, async (req, res) => {
+  try {
+    const { title, content, category, readingTime } = req.body;
+    
+    if (!title || !content) {
+      return res.status(400).json({ message: 'Titre et contenu requis' });
+    }
+
+    const newContent = await db.insert(psychoEducationContent).values({
+      title,
+      content,
+      category: category || 'general',
+      readingTime: readingTime || 5,
+      createdAt: new Date()
+    }).returning();
+
+    res.json(newContent[0]);
+  } catch (error) {
+    console.error('Error creating psycho-education content:', error);
+    res.status(500).json({ message: 'Erreur lors de la création du contenu' });
   }
 });
 
@@ -394,39 +420,11 @@ app.get('/api/exercise-sessions', requireAuth, async (req, res) => {
   }
 });
 
-// Static file serving
-app.use(express.static('dist/public'));
-
-// Catch all for SPA
-app.get('*', (req, res) => {
-  res.sendFile('index.html', { root: './dist/public' });
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('❌ Server error:', err);
   res.status(500).json({ message: 'Erreur interne du serveur' });
 });
 
-// Start server
-app.listen(port, '0.0.0.0', () => {
-  console.log(`✅ Apaddicto server is running on http://0.0.0.0:${port}`);
-  console.log(`📊 Health check: http://0.0.0.0:${port}/health`);
-  console.log(`🔍 Database test: http://0.0.0.0:${port}/api/test-db`);
-  console.log(`🚪 Available endpoints:`);
-  console.log(`   POST /api/auth/register - Créer un compte`);
-  console.log(`   POST /api/auth/login - Se connecter`);
-  console.log(`   POST /api/auth/logout - Se déconnecter`);
-  console.log(`   GET  /api/auth/me - Profil utilisateur`);
-});
-
-// Handle process termination
-process.on('SIGTERM', () => {
-  console.log('Received SIGTERM, shutting down gracefully');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('Received SIGINT, shutting down gracefully');
-  process.exit(0);
-});
+// Export for Vercel
+export default app;
