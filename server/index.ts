@@ -9,6 +9,21 @@ import { pgTable, text, varchar, integer, timestamp, jsonb, boolean } from 'driz
 import ws from 'ws';
 import path from 'path';
 
+// Type definitions
+interface User {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: string;
+}
+
+declare module 'express-session' {
+  interface SessionData {
+    user?: User;
+  }
+}
+
 // Configure Neon
 neonConfig.webSocketConstructor = ws;
 
@@ -131,7 +146,7 @@ app.get('/health', async (req, res) => {
     await db.execute(sql`SELECT 1`);
     res.json({ status: 'OK', database: 'Connected', timestamp: new Date().toISOString() });
   } catch (error) {
-    res.status(500).json({ status: 'ERROR', database: 'Disconnected', error: error.message });
+    res.status(500).json({ status: 'ERROR', database: 'Disconnected', error: (error as Error).message });
   }
 });
 
@@ -146,7 +161,7 @@ app.get('/api/test-db', async (req, res) => {
   } catch (error) {
     res.status(500).json({ 
       status: 'ERROR', 
-      error: error.message 
+      error: (error as Error).message 
     });
   }
 });
@@ -221,7 +236,7 @@ app.get('/api/init-db', async (req, res) => {
     res.json({ message: 'Database initialized successfully' });
   } catch (error) {
     console.error('❌ Database initialization error:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: (error as Error).message });
   }
 });
 
@@ -279,7 +294,7 @@ app.post('/api/auth/register', async (req, res) => {
   } catch (error) {
     console.error('❌ Registration error:', error);
     res.status(500).json({ 
-      message: error.message || "Erreur lors de l'inscription" 
+      message: (error as Error).message || "Erreur lors de l'inscription" 
     });
   }
 });
@@ -337,7 +352,7 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (error) {
     console.error('❌ Login error:', error);
     res.status(500).json({ 
-      message: error.message || "Erreur lors de la connexion" 
+      message: (error as Error).message || "Erreur lors de la connexion" 
     });
   }
 });
@@ -372,18 +387,23 @@ app.use((err: any, req: any, res: any, next: any) => {
   res.status(500).json({ message: 'Erreur interne du serveur' });
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`✅ Apaddicto server is running on port ${port}`);
-  console.log(`📊 Health check: /health`);
-  console.log(`🔍 Database test: /api/test-db`);
-  console.log(`🔧 Initialize DB: /api/init-db`);
-  console.log(`🚪 Available endpoints:`);
-  console.log(`   POST /api/auth/register - Créer un compte`);
-  console.log(`   POST /api/auth/login - Se connecter`);
-  console.log(`   POST /api/auth/logout - Se déconnecter`);
-  console.log(`   GET  /api/auth/me - Profil utilisateur`);
-});
+// Start server only if not in serverless environment
+if (process.env.VERCEL !== '1') {
+  app.listen(port, () => {
+    console.log(`✅ Apaddicto server is running on port ${port}`);
+    console.log(`📊 Health check: /health`);
+    console.log(`🔍 Database test: /api/test-db`);
+    console.log(`🔧 Initialize DB: /api/init-db`);
+    console.log(`🚪 Available endpoints:`);
+    console.log(`   POST /api/auth/register - Créer un compte`);
+    console.log(`   POST /api/auth/login - Se connecter`);
+    console.log(`   POST /api/auth/logout - Se déconnecter`);
+    console.log(`   GET  /api/auth/me - Profil utilisateur`);
+  });
+}
+
+// Export for serverless deployment
+export default app;
 
 // Handle process termination
 process.on('SIGTERM', () => {
