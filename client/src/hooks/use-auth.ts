@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -27,6 +28,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// ✅ Helper pour éviter "Unexpected end of JSON input"
+async function safeJson(response: Response) {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error("Réponse du serveur invalide");
+  }
+}
+
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
@@ -46,8 +58,8 @@ export function useAuthQuery() {
         }
         throw new Error("Failed to fetch user");
       }
-      const data = await response.json();
-      return data.user;
+      const data = await safeJson(response);
+      return data?.user || null;
     },
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -67,15 +79,16 @@ export function useLoginMutation() {
         body: JSON.stringify({ email, password }),
       });
 
+      const data = await safeJson(response);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Login failed");
+        throw new Error(data?.message || "Login failed");
       }
 
-      return response.json();
+      return data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["auth", "me"], data.user);
+      queryClient.setQueryData(["auth", "me"], data?.user || null);
       queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
   });
@@ -100,15 +113,16 @@ export function useRegisterMutation() {
         body: JSON.stringify(userData),
       });
 
+      const data = await safeJson(response);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Registration failed");
+        throw new Error(data?.message || "Registration failed");
       }
 
-      return response.json();
+      return data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["auth", "me"], data.user);
+      queryClient.setQueryData(["auth", "me"], data?.user || null);
       queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
   });
@@ -123,11 +137,13 @@ export function useLogoutMutation() {
         method: "POST",
       });
 
+      const data = await safeJson(response);
+
       if (!response.ok) {
-        throw new Error("Logout failed");
+        throw new Error(data?.message || "Logout failed");
       }
 
-      return response.json();
+      return data;
     },
     onSuccess: () => {
       queryClient.setQueryData(["auth", "me"], null);
@@ -135,4 +151,3 @@ export function useLogoutMutation() {
     },
   });
 }
-

@@ -1,3 +1,4 @@
+
 import type { Express } from "express";
 import { storage } from "./storage.js";
 import { AuthService, requireAuth, requireAdmin } from "./auth.js";
@@ -17,12 +18,15 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ ok: false, error: e instanceof Error ? e.message : String(e) });
     }
   });
-  
-  // Routes d'authentification
+
+  // ========================
+  // 🔐 AUTH ROUTES
+  // ========================
+
   app.post("/api/auth/register", async (req, res) => {
     try {
       const { email, password, firstName, lastName, role } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ message: "Email et mot de passe requis" });
       }
@@ -36,10 +40,10 @@ export function registerRoutes(app: Express) {
       });
 
       req.session.user = user;
-      res.json({ user, message: "Inscription réussie" });
+      res.json({ user }); // ✅ cohérent avec le frontend
     } catch (error) {
-      res.status(400).json({ 
-        message: error instanceof Error ? error.message : "Erreur lors de l'inscription" 
+      res.status(400).json({
+        message: error instanceof Error ? error.message : "Erreur lors de l'inscription"
       });
     }
   });
@@ -47,17 +51,17 @@ export function registerRoutes(app: Express) {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ message: "Email et mot de passe requis" });
       }
 
       const user = await AuthService.login(email, password);
       req.session.user = user;
-      res.json({ user, message: "Connexion réussie" });
+      res.json({ user }); // ✅ cohérent avec le frontend
     } catch (error) {
-      res.status(401).json({ 
-        message: error instanceof Error ? error.message : "Erreur de connexion" 
+      res.status(401).json({
+        message: error instanceof Error ? error.message : "Erreur de connexion"
       });
     }
   });
@@ -67,26 +71,22 @@ export function registerRoutes(app: Express) {
       if (err) {
         return res.status(500).json({ message: "Erreur lors de la déconnexion" });
       }
-      res.json({ message: "Déconnexion réussie" });
+      res.json({ message: "Logout successful" }); // ✅ cohérent avec le frontend
     });
   });
 
-  app.get("/api/auth/me", requireAuth, async (req, res) => {
-    try {
-      if (!req.session || !req.session.user) {
-        return res.status(401).json({ message: "Session non valide" });
-      }
-      const user = await AuthService.getUserById(req.session.user.id);
-      if (!user) {
-        return res.status(404).json({ message: "Utilisateur non trouvé" });
-      }
-      res.json({ user });
-    } catch (error) {
-      res.status(500).json({ message: "Erreur lors de la récupération du profil" });
+  app.get("/api/auth/me", async (req, res) => {
+    if (!req.session || !req.session.user) {
+      return res.json({ user: null }); // ✅ cohérent avec le frontend
     }
+    const user = await AuthService.getUserById(req.session.user.id);
+    res.json({ user });
   });
 
-  // Routes pour les exercices (admin seulement pour création/modification)
+  // ========================
+  // 📘 EXERCISES
+  // ========================
+
   app.get("/api/exercises", async (req, res) => {
     try {
       const exercises = await storage.getExercises();
@@ -106,7 +106,10 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Routes pour le contenu psychoéducatif
+  // ========================
+  // 📚 PSYCHO EDUCATION
+  // ========================
+
   app.get("/api/psycho-education", async (req, res) => {
     try {
       const content = await storage.getPsychoEducationContent();
@@ -126,7 +129,10 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Admin routes
+  // ========================
+  // ⚙️ ADMIN ROUTES
+  // ========================
+
   app.get("/api/admin/exercises", requireAdmin, async (req, res) => {
     try {
       const exercises = await storage.getAllExercises();
@@ -144,11 +150,14 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Failed to fetch all psycho-education content" });
     }
   });
-  
-  // Craving entries routes
+
+  // ========================
+  // 🍫 CRAVINGS
+  // ========================
+
   app.post("/api/cravings", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const data = insertCravingEntrySchema.parse({
         ...req.body,
         userId: req.session.user.id
@@ -162,7 +171,7 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/cravings", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const entries = await storage.getCravingEntries(userId, limit);
@@ -174,7 +183,7 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/cravings/stats", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const days = req.query.days ? parseInt(req.query.days as string) : undefined;
       const stats = await storage.getCravingStats(userId, days);
@@ -184,10 +193,13 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Exercise sessions routes
+  // ========================
+  // 🏋️ EXERCISE SESSIONS
+  // ========================
+
   app.post("/api/exercise-sessions", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const data = insertExerciseSessionSchema.parse({
         ...req.body,
         userId: req.session.user.id
@@ -201,7 +213,7 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/exercise-sessions", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const sessions = await storage.getExerciseSessions(userId, limit);
@@ -211,10 +223,13 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Beck analysis routes
+  // ========================
+  // 🧠 BECK ANALYSES
+  // ========================
+
   app.post("/api/beck-analyses", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const data = insertBeckAnalysisSchema.parse({
         ...req.body,
         userId: req.session.user.id
@@ -228,7 +243,7 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/beck-analyses", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const analyses = await storage.getBeckAnalyses(userId, limit);
@@ -238,10 +253,13 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // User stats and badges routes
+  // ========================
+  // 👤 USER ROUTES
+  // ========================
+
   app.get("/api/users/stats", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const stats = await storage.getUserStats(userId);
       res.json(stats);
@@ -252,7 +270,7 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/users/badges", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const badges = await storage.getUserBadges(userId);
       res.json(badges);
@@ -263,7 +281,7 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/users/profile", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const user = await storage.getUser(userId);
       if (!user) {
@@ -277,7 +295,7 @@ export function registerRoutes(app: Express) {
 
   app.put("/api/users/profile", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const { firstName, lastName, email } = req.body;
       const updatedUser = await AuthService.updateUser(userId, { firstName, lastName, email });
@@ -289,7 +307,7 @@ export function registerRoutes(app: Express) {
 
   app.put("/api/users/password", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const { oldPassword, newPassword } = req.body;
       await AuthService.updatePassword(userId, oldPassword, newPassword);
@@ -301,7 +319,7 @@ export function registerRoutes(app: Express) {
 
   app.delete("/api/users/profile", requireAuth, async (req, res) => {
     try {
-      if (!req.session || !req.session.user) return res.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       await storage.deleteUser(userId);
       req.session.destroy((err) => {
@@ -315,7 +333,10 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Create demo user for development
+  // ========================
+  // 🌱 SEED & DEMO
+  // ========================
+
   app.post("/api/demo-user", async (req, res) => {
     try {
       const user = await storage.createUser({
@@ -331,7 +352,6 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Route pour initialiser les données d'exemple
   app.post("/api/seed-data", requireAdmin, async (req, res) => {
     try {
       const { seedData } = await import("./seed-data.js");
