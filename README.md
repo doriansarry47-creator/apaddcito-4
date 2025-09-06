@@ -20,6 +20,81 @@ Une application web complète pour la gestion de la thérapie sportive avec auth
 - **Authentification** : Sessions avec bcrypt
 - **Déploiement** : Vercel
 
+## Migration et Initialisation de la Base de Données
+
+### Prérequis
+
+Assurez-vous d'avoir :
+- Node.js 20.x installé
+- Variables d'environnement configurées (voir `.env.example`)
+- Accès à une base de données PostgreSQL
+
+### Étapes de migration
+
+1. **Installation des dépendances** :
+```bash
+npm install
+```
+
+2. **Configuration de la base de données** :
+```bash
+# Copiez le fichier de configuration
+cp .env.example .env
+
+# Modifiez DATABASE_URL avec vos paramètres de connexion
+# Exemple : postgresql://user:password@localhost:5432/dbname
+```
+
+3. **Génération et application des migrations** :
+```bash
+# Générer les migrations à partir du schéma
+npm run db:generate
+
+# Appliquer les migrations (si nécessaire)
+npm run db:push
+```
+
+4. **Vérification de la connexion** :
+```bash
+# Démarrer le serveur
+npm run dev
+
+# Tester la connexion (dans un autre terminal)
+curl http://localhost:3000/api/test-db
+```
+
+### Test de l'authentification
+
+Après la migration, testez l'inscription et la connexion :
+
+1. **Créer un utilisateur** :
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@apaddicto.com",
+    "password": "motdepasse123",
+    "firstName": "Test",
+    "lastName": "User"
+  }'
+```
+
+2. **Se connecter** :
+```bash
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@apaddicto.com",
+    "password": "motdepasse123"
+  }'
+```
+
+### Sécurité des mots de passe
+
+- **Longueur minimale** : 6 caractères requis
+- **Hachage** : bcrypt avec salt rounds 10
+- **Validation** : Contrôles côté serveur et client
+
 ## Déploiement sur Vercel
 
 ### Prérequis
