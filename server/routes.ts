@@ -339,9 +339,18 @@ export function registerRoutes(app: Express) {
 
   app.post("/api/demo-user", async (req, res) => {
     try {
+      // Check if demo user already exists
+      const existingUser = await storage.getUserByEmail("demo@example.com");
+      if (existingUser) {
+        return res.json({ message: "Demo user already exists", user: existingUser });
+      }
+
+      // Create demo user with hashed password
+      const { AuthService } = await import("./auth.js");
+      const hashedPassword = await AuthService.hashPassword("Demo123!");
       const user = await storage.createUser({
         email: "demo@example.com",
-        password: "demo123",
+        password: hashedPassword,
         firstName: "Utilisateur",
         lastName: "Demo",
         role: "patient",
