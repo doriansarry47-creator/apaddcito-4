@@ -354,7 +354,7 @@ export function registerRoutes(app: Express) {
 
   app.post("/api/seed-data", requireAdmin, async (req, res) => {
     try {
-      const { seedData } = await import("./seed-data.js");
+      const { seedData } = await import("../scripts/seed.js");
       await seedData();
       res.json({ message: "Données d'exemple créées avec succès" });
     } catch (error) {

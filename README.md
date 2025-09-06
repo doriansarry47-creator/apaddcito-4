@@ -15,76 +15,132 @@ Une application web complète pour la gestion de la thérapie sportive avec auth
 
 - **Frontend** : React, TypeScript, Tailwind CSS, Shadcn/UI
 - **Backend** : Node.js, Express, TypeScript
-- **Base de données** : PostgreSQL (Neon)
-- **ORM** : Drizzle
+- **Base de données** : PostgreSQL avec Drizzle ORM
 - **Authentification** : Sessions avec bcrypt
 - **Déploiement** : Vercel
 
-## Déploiement sur Vercel
+## Installation
 
 ### Prérequis
 
-1. Compte Vercel (vercel.com)
-2. Base de données PostgreSQL (fournie : Neon)
-3. Code Vercel fourni : `wQIOawWSweqWark0ZL4eI9jU`
+- Node.js 20.x ou supérieur
+- npm ou yarn
+- Base de données PostgreSQL
 
-### Instructions de déploiement
+### Étapes d'installation
 
-#### Étape 1 : Connexion à Vercel
+1. **Cloner le projet**
+   ```bash
+   git clone <repository-url>
+   cd apaddcito-4
+   ```
 
-1. Allez sur [vercel.com](https://vercel.com)
-2. Connectez-vous avec votre compte GitHub/Google/Email
-3. Cliquez sur "New Project"
+2. **Installer les dépendances**
+   ```bash
+   npm install
+   ```
 
-#### Étape 2 : Import du projet
+3. **Configuration de l'environnement**
+   
+   Copiez `.env.example` vers `.env` et configurez les variables :
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Modifiez `.env` avec vos valeurs :
+   ```env
+   DATABASE_URL=postgresql://username:password@host:port/database?sslmode=require
+   SESSION_SECRET=your-secure-secret-key-here
+   CORS_ORIGIN=*
+   NODE_ENV=development
+   ```
 
-1. Sélectionnez "Import Git Repository"
-2. Si le projet n'est pas encore sur Git, uploadez le dossier `Apaddicto` complet
-3. Ou utilisez l'option "Deploy from CLI" avec le code fourni
+4. **Migrations de base de données**
+   ```bash
+   npm run db:push
+   ```
 
-#### Étape 3 : Configuration des variables d'environnement
+5. **Initialisation des données**
+   ```bash
+   npm run db:seed
+   ```
 
-Dans les paramètres du projet Vercel, ajoutez ces variables d'environnement :
+6. **Démarrage du serveur de développement**
+   ```bash
+   npm run dev
+   # ou seulement le serveur backend :
+   npm run dev:server
+   ```
 
-```
-DATABASE_URL=postgresql://neondb_owner:npg_vRJU7LlnYG1y@ep-soft-bush-ab0hbww0-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-SESSION_SECRET=Apaddicto2024SecretKey
-NODE_ENV=production
-```
+## Commandes disponibles
 
-#### Étape 4 : Configuration du build
+### Base de données
+- `npm run db:generate` - Génère les fichiers de migration
+- `npm run db:push` - Applique le schéma à la base de données
+- `npm run db:seed` - Initialise les données de base
 
-Vercel détectera automatiquement le projet Node.js. Vérifiez que :
-- **Build Command** : `npm run vercel-build`
-- **Output Directory** : `dist`
-- **Install Command** : `npm install`
+### Développement
+- `npm run dev` - Démarre le serveur de développement complet
+- `npm run dev:server` - Démarre seulement le serveur backend
+- `npm run check` - Vérifie les types TypeScript
 
-#### Étape 5 : Déploiement
+### Build et déploiement
+- `npm run build` - Build l'application pour la production
+- `npm run start` - Démarre l'application en mode production
 
-1. Cliquez sur "Deploy"
-2. Attendez que le déploiement se termine
-3. Votre application sera disponible sur l'URL fournie par Vercel
+## Vérification de l'installation
 
-### Configuration post-déploiement
+1. **Test de santé du serveur**
+   ```bash
+   curl http://localhost:3000/api/health
+   ```
+   Réponse attendue :
+   ```json
+   {
+     "status": "ok",
+     "service": "apaddicto-server",
+     "timestamp": "2024-01-01T12:00:00.000Z",
+     "environment": "development"
+   }
+   ```
 
-#### Création d'un compte administrateur
+2. **Connexion administrateur**
+   - Email : `admin@example.com`
+   - Mot de passe : `Admin123!`
 
-1. Accédez à votre application déployée
-2. Créez un compte avec le rôle "admin" lors de l'inscription
-3. Ou modifiez un compte existant en base de données
+3. **Utilisateur de démonstration**
+   - Email : `demo@example.com`
+   - Mot de passe : `Demo123!`
+   - ID : `demo-user-123`
 
-#### Initialisation des données
+## Variables d'environnement
 
-L'application inclut des exercices et du contenu psychoéducatif par défaut. Pour ajouter plus de contenu :
+| Variable | Description | Valeur par défaut |
+|----------|-------------|-------------------|
+| `DATABASE_URL` | URL de connexion PostgreSQL | Requis |
+| `SESSION_SECRET` | Clé secrète pour les sessions | Requis |
+| `CORS_ORIGIN` | Origine autorisée pour CORS | `*` |
+| `NODE_ENV` | Environnement d'exécution | `development` |
+| `PORT` | Port du serveur | `3000` |
 
-1. Connectez-vous en tant qu'administrateur
-2. Utilisez l'interface d'administration pour ajouter des exercices
-3. Ajoutez du contenu psychoéducatif via l'API
+## Comportement des utilisateurs
+
+### Administrateur (`admin@example.com`)
+- Accès complet à toutes les fonctionnalités
+- Peut créer et modifier des exercices
+- Peut gérer le contenu psychoéducatif
+- Accès aux statistiques globales
+
+### Utilisateur de démonstration (`demo@example.com`)
+- Compte patient pré-configuré
+- ID fixe : `demo-user-123`
+- Utilisé par le frontend pour les démonstrations
+- Données de test pré-remplies
 
 ## Structure du projet
 
 ```
-Apaddicto/
+apaddcito-4/
 ├── client/                 # Frontend React
 │   ├── src/
 │   │   ├── components/     # Composants UI
@@ -95,13 +151,20 @@ Apaddicto/
 │   ├── auth.ts            # Système d'authentification
 │   ├── routes.ts          # Routes API
 │   ├── storage.ts         # Couche de données
-│   └── seed-data.ts       # Données d'exemple
+│   ├── db.ts              # Configuration base de données
+│   └── index.ts           # Point d'entrée serveur
+├── scripts/                # Scripts utilitaires
+│   └── seed.ts            # Script d'initialisation
 ├── shared/                 # Types partagés
 │   └── schema.ts          # Schéma de base de données
-└── vercel.json            # Configuration Vercel
+├── migrations/             # Migrations Drizzle
+└── drizzle.config.ts      # Configuration Drizzle
 ```
 
 ## API Endpoints
+
+### Système
+- `GET /api/health` - Vérification de santé du serveur
 
 ### Authentification
 - `POST /api/auth/register` - Inscription
@@ -123,9 +186,33 @@ Apaddicto/
 - `POST /api/exercise-sessions` - Enregistrer une session
 - `GET /api/exercise-sessions` - Historique des sessions
 
-## Lien Instagram
+### Administration
+- `POST /api/seed-data` - Réinitialiser les données (admin)
 
-L'application inclut un lien vers le compte Instagram @apaperigueux dans la page de connexion.
+## Déploiement sur Vercel
+
+### Configuration des variables d'environnement
+
+Dans les paramètres du projet Vercel, ajoutez :
+
+```
+DATABASE_URL=postgresql://neondb_owner:npg_vRJU7LlnYG1y@ep-soft-bush-ab0hbww0-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+SESSION_SECRET=Apaddicto2024SecretKey
+NODE_ENV=production
+CORS_ORIGIN=https://your-domain.vercel.app
+```
+
+### Configuration du build
+
+- **Build Command** : `npm run vercel-build`
+- **Output Directory** : `dist`
+- **Install Command** : `npm install`
+
+### Post-déploiement
+
+1. Exécutez les migrations : `npm run db:push`
+2. Initialisez les données : `npm run db:seed`
+3. Vérifiez la santé : `https://your-domain.vercel.app/api/health`
 
 ## Support
 
