@@ -279,14 +279,14 @@ export default function Tracking() {
                           Exercice: {session.exerciseId}
                         </div>
                         
-                        {session.cratingBefore !== null && session.cravingAfter !== null && (
+                        {session.cravingBefore !== null && session.cravingAfter !== null && (
                           <div className="flex items-center space-x-4 text-sm">
-                            <span>Craving avant: <strong>{session.cratingBefore}/10</strong></span>
+                            <span>Craving avant: <strong>{session.cravingBefore}/10</strong></span>
                             <span className="material-icons text-primary">arrow_forward</span>
                             <span>Craving après: <strong>{session.cravingAfter}/10</strong></span>
-                            {session.cratingBefore > session.cravingAfter && (
+                            {session.cravingBefore > session.cravingAfter && (
                               <Badge className="bg-success text-success-foreground">
-                                -{session.cratingBefore - session.cravingAfter} points
+                                -{session.cravingBefore - session.cravingAfter} points
                               </Badge>
                             )}
                           </div>

@@ -27,6 +27,11 @@ export class AuthService {
     lastName?: string;
     role?: string;
   }): Promise<AuthUser> {
+    // Valider le mot de passe
+    if (userData.password.length < 6) {
+      throw new Error('Le mot de passe doit contenir au moins 6 caractères');
+    }
+
     // Vérifier si l'utilisateur existe déjà
     const existingUser = await storage.getUserByEmail(userData.email);
     if (existingUser) {

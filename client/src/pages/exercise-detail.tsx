@@ -109,7 +109,7 @@ export default function ExerciseDetail() {
       exerciseId: exercise.id,
       duration: timeElapsed,
       completed: true,
-      cratingBefore: cravingBefore,
+      cravingBefore: cravingBefore,
       cravingAfter: cravingAfter,
     });
 
