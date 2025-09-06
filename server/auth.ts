@@ -27,9 +27,22 @@ export class AuthService {
     lastName?: string;
     role?: string;
   }): Promise<AuthUser> {
+    // Enhanced validation
+    if (!userData.email?.trim() || !userData.password?.trim()) {
+      throw new Error('Email et mot de passe requis');
+    }
+
+    if (userData.password.length < 6) {
+      throw new Error('Le mot de passe doit contenir au moins 6 caractères');
+    }
+
+    const email = userData.email.trim();
+    console.log(`📝 Registration attempt for: ${email}`);
+
     // Vérifier si l'utilisateur existe déjà
-    const existingUser = await storage.getUserByEmail(userData.email);
+    const existingUser = await storage.getUserByEmail(email);
     if (existingUser) {
+      console.warn(`❌ Registration failed: Email already exists for ${email}`);
       throw new Error('Un utilisateur avec cet email existe déjà');
     }
 
@@ -38,15 +51,16 @@ export class AuthService {
 
     // Créer l'utilisateur
     const newUser: InsertUser = {
-      email: userData.email,
+      email,
       password: hashedPassword,
-      firstName: userData.firstName || null,
-      lastName: userData.lastName || null,
+      firstName: userData.firstName?.trim() || null,
+      lastName: userData.lastName?.trim() || null,
       role: userData.role || 'patient',
     };
 
     const user = await storage.createUser(newUser);
     
+    console.log(`✅ Registration successful for: ${email}`);
     return {
       id: user.id,
       email: user.email,
@@ -57,23 +71,34 @@ export class AuthService {
   }
 
   static async login(email: string, password: string): Promise<AuthUser> {
+    // Enhanced validation
+    if (!email?.trim() || !password?.trim()) {
+      throw new Error('Email et mot de passe requis');
+    }
+
+    console.log(`🔐 Login attempt for: ${email.trim()}`);
+
     // Trouver l'utilisateur par email
-    const user = await storage.getUserByEmail(email);
+    const user = await storage.getUserByEmail(email.trim());
     if (!user) {
+      console.warn(`❌ Login failed: User not found for ${email.trim()}`);
       throw new Error('Email ou mot de passe incorrect');
     }
 
     // Vérifier le mot de passe
     const isValidPassword = await this.verifyPassword(password, user.password);
     if (!isValidPassword) {
+      console.warn(`❌ Login failed: Invalid password for ${email.trim()}`);
       throw new Error('Email ou mot de passe incorrect');
     }
 
     // Vérifier si l'utilisateur est actif
     if (!user.isActive) {
+      console.warn(`❌ Login failed: Inactive account for ${email.trim()}`);
       throw new Error('Compte désactivé');
     }
 
+    console.log(`✅ Login successful for: ${email.trim()}`);
     return {
       id: user.id,
       email: user.email,
@@ -156,21 +181,38 @@ export class AuthService {
 // Middleware pour vérifier l'authentification
 export function requireAuth(req: any, res: any, next: any) {
   if (!req.session?.user) {
-    return res.status(401).json({ message: 'Authentification requise' });
+    console.warn(`❌ Unauthorized access attempt to ${req.path}`);
+    return res.status(401).json({ 
+      message: 'Authentification requise',
+      code: 'AUTHENTICATION_REQUIRED'
+    });
   }
+  
+  // Add user info to request for easier access
+  req.user = req.session.user;
   next();
 }
 
 // Middleware pour vérifier le rôle admin
 export function requireAdmin(req: any, res: any, next: any) {
   if (!req.session?.user) {
-    return res.status(401).json({ message: 'Authentification requise' });
+    console.warn(`❌ Unauthorized access attempt to admin route ${req.path}`);
+    return res.status(401).json({ 
+      message: 'Authentification requise',
+      code: 'AUTHENTICATION_REQUIRED'
+    });
   }
   
   if (req.session.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Accès administrateur requis' });
+    console.warn(`❌ Non-admin user ${req.session.user.email} attempted to access ${req.path}`);
+    return res.status(403).json({ 
+      message: 'Accès administrateur requis',
+      code: 'ADMIN_ACCESS_REQUIRED'
+    });
   }
   
+  // Add user info to request for easier access
+  req.user = req.session.user;
   next();
 }
 
