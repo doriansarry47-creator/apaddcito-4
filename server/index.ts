@@ -6,6 +6,7 @@ import { registerRoutes } from './routes.js';
 import './migrate.js';
 import { debugTablesRouter } from './debugTables.js';
 import { Pool } from 'pg';
+import { serveStatic } from './vite.js';
 
 // === INITIALISATION EXPRESS ===
 const app = express();
@@ -107,6 +108,11 @@ app.use((err: any, _req: any, res: any, _next: any) => {
   console.error('❌ Erreur serveur:', err);
   res.status(500).json({ message: 'Erreur interne' });
 });
+
+// === STATIC FILE SERVING ===
+if (process.env.NODE_ENV === 'production') {
+  serveStatic(app);
+}
 
 // === DEBUG ROUTES DISPONIBLES ===
 console.log("Routes disponibles :");

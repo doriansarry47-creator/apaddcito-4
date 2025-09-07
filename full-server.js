@@ -2,6 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import memorystore from 'memorystore';
 import bcrypt from 'bcryptjs';
+import path from 'path';
 import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { sql, eq, and } from 'drizzle-orm';
@@ -399,7 +400,7 @@ app.use(express.static('dist/public'));
 
 // Catch all for SPA
 app.get('*', (req, res) => {
-  res.sendFile('index.html', { root: '/home/user/webapp/dist/public' });
+  res.sendFile('index.html', { root: path.resolve(process.cwd(), 'dist/public') });
 });
 
 // Error handling middleware
