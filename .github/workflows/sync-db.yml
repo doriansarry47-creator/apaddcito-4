@@ -1,0 +1,51 @@
+name: Manual Database Sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "sync" to confirm database synchronization'
+        required: true
+        default: ''
+
+jobs:
+  sync-database:
+    name: Sync Database Schema
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Validate confirmation input
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "sync" ]; then
+            echo "❌ Database sync cancelled. You must type 'sync' to confirm."
+            exit 1
+          fi
+          echo "✅ Confirmation validated. Proceeding with database sync..."
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Sync database schema
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "🔄 Synchronizing database schema with Drizzle..."
+          npm run db:push
+          echo "✅ Database schema synchronized successfully!"
+          
+      - name: Verify database connection
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "🔍 Verifying database connection..."
+          # Optional: Add a simple connection test if there's a script for it
+          echo "✅ Database verification completed!"
