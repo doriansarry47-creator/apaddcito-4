@@ -1,7 +1,3 @@
-import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
-
-export const example = pgTable('example', {
-  id: serial('id').primaryKey(),
-  label: text('label'),
-  createdAt: timestamp('created_at').defaultNow()
-});
+// This file is deprecated - schema is now in ../shared/schema.ts
+// Kept for backward compatibility only
+export * from '../shared/schema.js';
