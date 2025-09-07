@@ -51,18 +51,28 @@ export function useAuthQuery() {
   return useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => {
-      const response = await fetch("/api/auth/me");
-      if (!response.ok) {
-        if (response.status === 401) {
+      try {
+        const response = await fetch("/api/auth/me");
+        if (!response.ok) {
+          if (response.status === 401) {
+            return null;
+          }
+          // For other errors, don't throw - just return null to indicate no user
+          console.warn("Auth query failed:", response.status, response.statusText);
           return null;
         }
-        throw new Error("Failed to fetch user");
+        const data = await safeJson(response);
+        return data?.user || null;
+      } catch (error) {
+        // Network errors or other issues - don't throw, just return null
+        console.warn("Auth query error:", error);
+        return null;
       }
-      const data = await safeJson(response);
-      return data?.user || null;
     },
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    // Add error handling to prevent blank pages
+    throwOnError: false,
   });
 }
 

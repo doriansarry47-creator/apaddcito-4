@@ -32,8 +32,12 @@ export default function Login() {
 
   // ✅ Redirection uniquement si l'utilisateur est connecté
   useEffect(() => {
-    if (user && !isLoading) {
-      setLocation("/dashboard"); // change la route cible
+    try {
+      if (user && !isLoading) {
+        setLocation("/dashboard"); // change la route cible
+      }
+    } catch (error) {
+      console.warn("Redirection error:", error);
     }
   }, [user, isLoading, setLocation]);
 
@@ -74,10 +78,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-loading-fallback">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Apaddicto</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'var(--font-roboto), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>Apaddicto</h1>
           <p className="text-gray-600">Votre parcours de bien-être commence ici</p>
         </div>
 
