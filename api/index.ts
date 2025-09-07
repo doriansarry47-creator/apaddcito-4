@@ -1,7 +1,7 @@
 // api/index.ts - Vercel Serverless Function Entry Point
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -14,28 +14,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const { url } = req;
+  const url = req.url || '';
+  console.log(`API Request: ${req.method} ${url}`);
   
-  // Simple routing
-  if (url === '/api/' || url === '/api') {
-    return res.json({ message: '✅ API is running!', timestamp: new Date().toISOString() });
-  }
-  
-  if (url === '/api/health') {
-    return res.json({
-      status: 'ok',
-      message: 'API is running!', 
+  // Simple routing based on URL path
+  if (url.endsWith('/') || url === '') {
+    return res.status(200).json({ 
+      message: '✅ API is running!', 
       timestamp: new Date().toISOString(),
-      env: process.env.NODE_ENV || 'development'
+      method: req.method,
+      url: url
     });
   }
   
-  if (url === '/api/ping') {
-    return res.json({ message: 'pong 🏓' });
+  if (url.endsWith('/health')) {
+    return res.status(200).json({
+      status: 'ok',
+      message: 'API is running!', 
+      timestamp: new Date().toISOString(),
+      env: process.env.NODE_ENV || 'development',
+      url: url
+    });
+  }
+  
+  if (url.endsWith('/ping')) {
+    return res.status(200).json({ 
+      message: 'pong 🏓',
+      timestamp: new Date().toISOString(),
+      url: url
+    });
   }
 
-  // For now, return 404 for other routes
-  return res.status(404).json({ message: 'API route not found', url });
+  // For debugging: return info about the request
+  return res.status(404).json({ 
+    message: 'API route not found', 
+    method: req.method,
+    url: url,
+    timestamp: new Date().toISOString()
+  });
 }
 
 
