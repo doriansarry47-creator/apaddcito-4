@@ -87,7 +87,7 @@ var init_schema = __esm({
     });
     cravingEntries = pgTable("craving_entries", {
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-      userId: varchar("user_id").notNull(),
+      userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
       intensity: integer("intensity").notNull(),
       // 0-10 scale
       triggers: jsonb("triggers").$type().default([]),
@@ -97,8 +97,8 @@ var init_schema = __esm({
     });
     exerciseSessions = pgTable("exercise_sessions", {
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-      userId: varchar("user_id").notNull(),
-      exerciseId: varchar("exercise_id").notNull(),
+      userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+      exerciseId: varchar("exercise_id").notNull().references(() => exercises.id, { onDelete: "cascade" }),
       duration: integer("duration"),
       // in seconds
       completed: boolean("completed").default(false),
@@ -110,7 +110,7 @@ var init_schema = __esm({
     });
     beckAnalyses = pgTable("beck_analyses", {
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-      userId: varchar("user_id").notNull(),
+      userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
       situation: text("situation"),
       automaticThoughts: text("automatic_thoughts"),
       emotions: text("emotions"),
@@ -122,14 +122,14 @@ var init_schema = __esm({
     });
     userBadges = pgTable("user_badges", {
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-      userId: varchar("user_id").notNull(),
+      userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
       badgeType: varchar("badge_type").notNull(),
       // '7_days', '50_exercises', 'craving_reduction'
       earnedAt: timestamp("earned_at").defaultNow()
     });
     userStats = pgTable("user_stats", {
       id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-      userId: varchar("user_id").notNull().unique(),
+      userId: varchar("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
       exercisesCompleted: integer("exercises_completed").default(0),
       totalDuration: integer("total_duration").default(0),
       // in seconds
