@@ -64,5 +64,14 @@ app.get("/ping", (req, res) => {
   res.json({ message: "pong 🏓" });
 });
 
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "API is running!",
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || "development"
+  });
+});
+
 
 export default app;
