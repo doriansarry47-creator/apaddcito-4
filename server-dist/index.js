@@ -788,6 +788,48 @@ function registerRoutes(app2) {
       res.status(500).json({ ok: false, error: e instanceof Error ? e.message : String(e) });
     }
   });
+  app2.get("/api/diagnose-user-table", async (_req, res) => {
+    try {
+      const tableCheckQuery = sql3`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND (table_name = 'user' OR table_name = 'users')
+      `;
+      const tables = await getDB().execute(tableCheckQuery);
+      const tableNames = tables.rows.map((row) => row.table_name);
+      const diagnosis = {
+        status: "ok",
+        tables_found: tableNames,
+        has_user_table: tableNames.includes("user"),
+        has_users_table: tableNames.includes("users"),
+        recommendations: []
+      };
+      if (diagnosis.has_user_table && !diagnosis.has_users_table) {
+        diagnosis.status = "warning";
+        diagnosis.recommendations.push('Table "user" exists but "users" does not. This may cause PostgreSQL reserved keyword issues.');
+        diagnosis.recommendations.push('Consider renaming "user" table to "users"');
+      } else if (diagnosis.has_user_table && diagnosis.has_users_table) {
+        diagnosis.status = "error";
+        diagnosis.recommendations.push('Both "user" and "users" tables exist. This may cause conflicts.');
+        diagnosis.recommendations.push("Manual intervention required to resolve table naming conflict.");
+      } else if (!diagnosis.has_user_table && diagnosis.has_users_table) {
+        diagnosis.status = "ok";
+        diagnosis.recommendations.push('Table naming is correct ("users" table exists)');
+      } else {
+        diagnosis.status = "warning";
+        diagnosis.recommendations.push("No user-related tables found. Run migrations to initialize database.");
+      }
+      res.json(diagnosis);
+    } catch (error) {
+      console.error("Database diagnosis failed:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Failed to diagnose database tables",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
   app2.post("/api/auth/register", async (req, res) => {
     try {
       const { email, password, firstName, lastName, role } = req.body;

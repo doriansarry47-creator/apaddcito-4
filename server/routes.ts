@@ -19,6 +19,55 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Database diagnostic endpoint for user table issues
+  app.get("/api/diagnose-user-table", async (_req, res) => {
+    try {
+      // Check if both 'user' and 'users' tables exist
+      const tableCheckQuery = sql`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND (table_name = 'user' OR table_name = 'users')
+      `;
+      
+      const tables = await getDB().execute(tableCheckQuery);
+      const tableNames = tables.rows.map((row: any) => row.table_name);
+      
+      const diagnosis = {
+        status: 'ok',
+        tables_found: tableNames,
+        has_user_table: tableNames.includes('user'),
+        has_users_table: tableNames.includes('users'),
+        recommendations: [] as string[]
+      };
+      
+      if (diagnosis.has_user_table && !diagnosis.has_users_table) {
+        diagnosis.status = 'warning';
+        diagnosis.recommendations.push('Table "user" exists but "users" does not. This may cause PostgreSQL reserved keyword issues.');
+        diagnosis.recommendations.push('Consider renaming "user" table to "users"');
+      } else if (diagnosis.has_user_table && diagnosis.has_users_table) {
+        diagnosis.status = 'error';
+        diagnosis.recommendations.push('Both "user" and "users" tables exist. This may cause conflicts.');
+        diagnosis.recommendations.push('Manual intervention required to resolve table naming conflict.');
+      } else if (!diagnosis.has_user_table && diagnosis.has_users_table) {
+        diagnosis.status = 'ok';
+        diagnosis.recommendations.push('Table naming is correct ("users" table exists)');
+      } else {
+        diagnosis.status = 'warning';
+        diagnosis.recommendations.push('No user-related tables found. Run migrations to initialize database.');
+      }
+      
+      res.json(diagnosis);
+    } catch (error) {
+      console.error('Database diagnosis failed:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to diagnose database tables',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // ========================
   // 🔐 AUTH ROUTES
   // ========================

@@ -211,9 +211,10 @@ app.get('/api/test-db', async (req, res) => {
 // Initialize database tables
 app.get('/api/init-db', async (req, res) => {
   try {
-    // Create tables if they don't exist
+    // IMPORTANT: Always use "users" (plural) to avoid PostgreSQL reserved keyword "user"
+    // This prevents the error: relation 'user' does not exist
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE IF NOT EXISTS "users" (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
         email VARCHAR UNIQUE NOT NULL,
         password VARCHAR NOT NULL,
@@ -416,6 +417,55 @@ app.get('*', (req, res) => {
   res.sendFile('index.html', { root: '/home/user/webapp/dist/public' });
 });
 
+// Database diagnostic endpoint for user table issues
+app.get('/api/diagnose-user-table', async (req, res) => {
+  try {
+    // Check if both 'user' and 'users' tables exist
+    const tableCheckQuery = sql`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND (table_name = 'user' OR table_name = 'users')
+    `;
+    
+    const tables = await db.execute(tableCheckQuery);
+    const tableNames = tables.rows.map(row => row.table_name);
+    
+    const diagnosis = {
+      status: 'ok',
+      tables_found: tableNames,
+      has_user_table: tableNames.includes('user'),
+      has_users_table: tableNames.includes('users'),
+      recommendations: []
+    };
+    
+    if (diagnosis.has_user_table && !diagnosis.has_users_table) {
+      diagnosis.status = 'warning';
+      diagnosis.recommendations.push('Table "user" exists but "users" does not. This may cause PostgreSQL reserved keyword issues.');
+      diagnosis.recommendations.push('Consider renaming "user" table to "users"');
+    } else if (diagnosis.has_user_table && diagnosis.has_users_table) {
+      diagnosis.status = 'error';
+      diagnosis.recommendations.push('Both "user" and "users" tables exist. This may cause conflicts.');
+      diagnosis.recommendations.push('Manual intervention required to resolve table naming conflict.');
+    } else if (!diagnosis.has_user_table && diagnosis.has_users_table) {
+      diagnosis.status = 'ok';
+      diagnosis.recommendations.push('Table naming is correct ("users" table exists)');
+    } else {
+      diagnosis.status = 'warning';
+      diagnosis.recommendations.push('No user-related tables found. Run /api/init-db to initialize database.');
+    }
+    
+    res.json(diagnosis);
+  } catch (error) {
+    console.error('Database diagnosis failed:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to diagnose database tables',
+      error: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('❌ Server error:', err);
@@ -428,6 +478,7 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`📊 Health check: http://0.0.0.0:${port}/health`);
   console.log(`🔍 Database test: http://0.0.0.0:${port}/api/test-db`);
   console.log(`🔧 Initialize DB: http://0.0.0.0:${port}/api/init-db`);
+  console.log(`🩺 Diagnose user table: http://0.0.0.0:${port}/api/diagnose-user-table`);
   console.log(`🚪 Available endpoints:`);
   console.log(`   POST /api/auth/register - Créer un compte`);
   console.log(`   POST /api/auth/login - Se connecter`);
