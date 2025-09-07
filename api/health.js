@@ -1,6 +1,6 @@
-// Simple health check endpoint in plain JavaScript
+// Simple health check endpoint in CommonJS format
 
-export default function handler(req, res) {
+module.exports = (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,4 +22,4 @@ export default function handler(req, res) {
     method: req.method,
     url: req.url
   });
-}
+};
