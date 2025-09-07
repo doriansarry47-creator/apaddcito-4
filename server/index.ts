@@ -4,7 +4,7 @@ import session from 'express-session';
 import cors from 'cors';
 import { registerRoutes } from './routes.js';
 import './migrate.js'; // lance les migrations si le dossier migrations existe
-import { debugTablesRouter } from './routes/debugTables.js';
+import { debugTablesRouter } from './debugTables.js'; // <-- corrigé
 
 const app = express();
 
