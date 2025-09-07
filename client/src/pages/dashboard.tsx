@@ -8,11 +8,10 @@ import { GamificationProgress } from "@/components/gamification-progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthQuery } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { getEmergencyExercises } from "@/lib/exercises-data";
 import type { User, UserStats } from "@shared/schema";
-
-const DEMO_USER_ID = "demo-user-123";
 
 interface CravingStats {
   average: number;
@@ -23,33 +22,34 @@ export default function Dashboard() {
   const [showCravingEntry, setShowCravingEntry] = useState(false);
   const [showBeckColumn, setShowBeckColumn] = useState(false);
   const { toast } = useToast();
-
-  // Create demo user if needed
-  const createDemoUserMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("POST", "/api/demo-user");
-    },
-  });
+  
+  // Récupérer l'utilisateur authentifié
+  const { data: authenticatedUser, isLoading } = useAuthQuery();
 
   const { data: cravingStats } = useQuery<CravingStats>({
-    queryKey: ["/api/cravings", DEMO_USER_ID, "stats"],
+    queryKey: ["/api/cravings/stats"],
+    queryFn: async () => {
+      const response = await fetch("/api/cravings/stats");
+      if (!response.ok) throw new Error("Failed to fetch craving stats");
+      return response.json();
+    },
+    enabled: !!authenticatedUser,
     initialData: { average: 0, trend: 0 },
   });
 
   const { data: userStats } = useQuery<UserStats>({
-    queryKey: ["/api/users", DEMO_USER_ID, "stats"],
+    queryKey: ["/api/users/stats"],
+    queryFn: async () => {
+      const response = await fetch("/api/users/stats");
+      if (!response.ok) throw new Error("Failed to fetch user stats");
+      return response.json();
+    },
+    enabled: !!authenticatedUser,
     initialData: { exercisesCompleted: 0, totalDuration: 0, currentStreak: 0, longestStreak: 0, averageCraving: 0, id: '', userId: '', updatedAt: new Date() },
   });
 
-  const { data: user } = useQuery<User>({
-    queryKey: ["/api/users", DEMO_USER_ID],
-    initialData: { level: 1, points: 0, email: '', password: '', firstName: '', lastName: '', profileImageUrl: '', role: '', isActive: true, id: '', createdAt: new Date(), updatedAt: new Date() },
-  });
-
-  // Initialize demo user on mount
-  useEffect(() => {
-    createDemoUserMutation.mutate();
-  }, []);
+  // Pas besoin de requête séparée pour user, nous avons déjà authenticatedUser
+  const user = authenticatedUser;
 
   const startEmergencyRoutine = () => {
     const emergencyExercises = getEmergencyExercises();
@@ -62,7 +62,16 @@ export default function Dashboard() {
   const todayCravingLevel = cravingStats?.average || 0;
   const cravingTrend = cravingStats?.trend || 0;
   const exercisesCompleted = userStats?.exercisesCompleted || 0;
-  const userLevel = user?.level || 1;
+  const userLevel = 1; // Par défaut niveau 1, peut être étendu avec la gamification
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -189,10 +198,10 @@ export default function Dashboard() {
         </section>
 
         {/* Conditional Forms */}
-        {showCravingEntry && (
+        {showCravingEntry && authenticatedUser && (
           <section className="mb-8">
             <CravingEntry 
-              userId={DEMO_USER_ID} 
+              userId={authenticatedUser.id} 
               onSuccess={() => {
                 setShowCravingEntry(false);
                 toast({
@@ -204,10 +213,10 @@ export default function Dashboard() {
           </section>
         )}
 
-        {showBeckColumn && (
+        {showBeckColumn && authenticatedUser && (
           <section className="mb-8">
             <BeckColumn 
-              userId={DEMO_USER_ID}
+              userId={authenticatedUser.id}
               onSuccess={() => {
                 setShowBeckColumn(false);
                 toast({
@@ -264,7 +273,7 @@ export default function Dashboard() {
         </section>
 
         {/* Gamification Progress */}
-        <GamificationProgress userId={DEMO_USER_ID} />
+        {authenticatedUser && <GamificationProgress userId={authenticatedUser.id} />}
       </main>
 
       {/* Floating Emergency Button */}
