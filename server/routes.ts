@@ -27,21 +27,39 @@ export function registerRoutes(app: Express) {
     try {
       const { email, password, firstName, lastName, role } = req.body;
 
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email et mot de passe requis" });
+      // Enhanced validation
+      if (!email?.trim() || !password?.trim()) {
+        return res.status(400).json({ 
+          message: "Email et mot de passe requis" 
+        });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ 
+          message: "Le mot de passe doit contenir au moins 6 caractères" 
+        });
+      }
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return res.status(400).json({ 
+          message: "Format d'email invalide" 
+        });
       }
 
       const user = await AuthService.register({
-        email,
+        email: email.trim(),
         password,
-        firstName,
-        lastName,
-        role,
+        firstName: firstName?.trim() || null,
+        lastName: lastName?.trim() || null,
+        role: role || 'patient',
       });
 
       req.session.user = user;
-      res.json({ user }); // ✅ cohérent avec le frontend
+      res.json({ user, message: "Inscription réussie" });
     } catch (error) {
+      console.error("Registration error:", error);
       res.status(400).json({
         message: error instanceof Error ? error.message : "Erreur lors de l'inscription"
       });
@@ -52,26 +70,36 @@ export function registerRoutes(app: Express) {
     try {
       const { email, password } = req.body;
 
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email et mot de passe requis" });
+      // Enhanced validation
+      if (!email?.trim() || !password?.trim()) {
+        return res.status(400).json({ 
+          message: "Email et mot de passe requis" 
+        });
       }
 
-      const user = await AuthService.login(email, password);
+      const user = await AuthService.login(email.trim(), password);
       req.session.user = user;
-      res.json({ user }); // ✅ cohérent avec le frontend
+      
+      console.log(`✅ User logged in successfully: ${user.email}`);
+      res.json({ user, message: "Connexion réussie" });
     } catch (error) {
-      res.status(401).json({
+      console.error("Login error:", error);
+      const status = error instanceof Error && error.message.includes('incorrect') ? 401 : 400;
+      res.status(status).json({
         message: error instanceof Error ? error.message : "Erreur de connexion"
       });
     }
   });
 
   app.post("/api/auth/logout", (req, res) => {
+    const userEmail = req.session?.user?.email;
     req.session.destroy((err) => {
       if (err) {
+        console.error("Logout error:", err);
         return res.status(500).json({ message: "Erreur lors de la déconnexion" });
       }
-      res.json({ message: "Logout successful" }); // ✅ cohérent avec le frontend
+      console.log(`👋 User logged out: ${userEmail || 'unknown'}`);
+      res.json({ message: "Déconnexion réussie" });
     });
   });
 

@@ -1,6 +1,7 @@
 
 import { useState, useEffect, createContext, useContext } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api, type ApiError } from "@/lib/api";
 
 interface User {
   id: string;
@@ -26,18 +27,26 @@ interface AuthContextType {
   isAdmin: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
-
-// ✅ Helper pour éviter "Unexpected end of JSON input"
-async function safeJson(response: Response) {
-  const text = await response.text();
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error("Réponse du serveur invalide");
-  }
+// Authentication response interfaces
+interface AuthResponse {
+  user: User | null;
+  message?: string;
 }
+
+interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+interface RegisterRequest {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function useAuth() {
   const context = useContext(AuthContext);
@@ -51,15 +60,16 @@ export function useAuthQuery() {
   return useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => {
-      const response = await fetch("/api/auth/me");
-      if (!response.ok) {
-        if (response.status === 401) {
+      try {
+        const data = await api.get<AuthResponse>("/api/auth/me");
+        return data?.user || null;
+      } catch (error) {
+        // Handle 401 (unauthorized) as not logged in
+        if (error instanceof Error && 'status' in error && (error as ApiError).status === 401) {
           return null;
         }
-        throw new Error("Failed to fetch user");
+        throw error;
       }
-      const data = await safeJson(response);
-      return data?.user || null;
     },
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -70,21 +80,16 @@ export function useLoginMutation() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await safeJson(response);
-
-      if (!response.ok) {
-        throw new Error(data?.message || "Login failed");
+    mutationFn: async ({ email, password }: LoginRequest) => {
+      // Enhanced validation
+      if (!email?.trim()) {
+        throw new Error("L'email est requis");
       }
-
+      if (!password?.trim()) {
+        throw new Error("Le mot de passe est requis");
+      }
+      
+      const data = await api.post<AuthResponse>("/api/auth/login", { email: email.trim(), password });
       return data;
     },
     onSuccess: (data) => {
@@ -98,27 +103,28 @@ export function useRegisterMutation() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (userData: {
-      email: string;
-      password: string;
-      firstName?: string;
-      lastName?: string;
-      role?: string;
-    }) => {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      });
-
-      const data = await safeJson(response);
-
-      if (!response.ok) {
-        throw new Error(data?.message || "Registration failed");
+    mutationFn: async (userData: RegisterRequest) => {
+      // Enhanced validation
+      if (!userData.email?.trim()) {
+        throw new Error("L'email est requis");
       }
-
+      if (!userData.password?.trim()) {
+        throw new Error("Le mot de passe est requis");
+      }
+      if (userData.password.length < 6) {
+        throw new Error("Le mot de passe doit contenir au moins 6 caractères");
+      }
+      
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(userData.email.trim())) {
+        throw new Error("Format d'email invalide");
+      }
+      
+      const data = await api.post<AuthResponse>("/api/auth/register", {
+        ...userData,
+        email: userData.email.trim(),
+      });
       return data;
     },
     onSuccess: (data) => {
@@ -133,16 +139,7 @@ export function useLogoutMutation() {
   
   return useMutation({
     mutationFn: async () => {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-      });
-
-      const data = await safeJson(response);
-
-      if (!response.ok) {
-        throw new Error(data?.message || "Logout failed");
-      }
-
+      const data = await api.post<{ message: string }>("/api/auth/logout");
       return data;
     },
     onSuccess: () => {
