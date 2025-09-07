@@ -5,13 +5,33 @@ import * as schema from "../shared/schema.js";
 
 const { Pool } = pkg;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
+let pool: InstanceType<typeof Pool> | null = null;
+let db: ReturnType<typeof drizzle> | null = null;
+
+// Lazy initialization pour éviter les erreurs au build time
+export function getDB() {
+  if (!db) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
+    }
+    
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+    });
+    
+    db = drizzle(pool, { schema });
+  }
+  
+  return db;
 }
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+export function getPool() {
+  if (!pool) {
+    getDB(); // This will initialize both pool and db
+  }
+  return pool!;
+}
 
-export const db = drizzle(pool, { schema });
-export { pool };
+// Pour la compatibilité avec le code existant
+export { getDB as db };
+export { getPool as pool };

@@ -1,4 +1,4 @@
-import { db } from "./db.js";
+import { getDB } from "./db.js";
 import {
   users,
   exercises,
@@ -69,22 +69,22 @@ export interface IStorage {
 
 export class DbStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    return db.select().from(users).where(eq(users.id, id)).then(rows => rows[0]);
+    return getDB().select().from(users).where(eq(users.id, id)).then(rows => rows[0]);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return db.select().from(users).where(eq(users.email, email)).then(rows => rows[0]);
+    return getDB().select().from(users).where(eq(users.email, email)).then(rows => rows[0]);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const newUser = await db.insert(users).values(insertUser).returning().then(rows => rows[0]);
+    const newUser = await getDB().insert(users).values(insertUser).returning().then(rows => rows[0]);
     // Initialize stats for the new user
-    await db.insert(userStats).values({ userId: newUser.id });
+    await getDB().insert(userStats).values({ userId: newUser.id });
     return newUser;
   }
 
   async updateUser(userId: string, data: Partial<Omit<User, 'id' | 'password' | 'role' | 'createdAt' | 'updatedAt'>>): Promise<User> {
-    const updatedUser = await db.update(users)
+    const updatedUser = await getDB().update(users)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
@@ -92,7 +92,7 @@ export class DbStorage implements IStorage {
   }
 
   async updatePassword(userId: string, newHashedPassword: string): Promise<User> {
-    return db.update(users)
+    return getDB().update(users)
       .set({ password: newHashedPassword, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning()
@@ -100,7 +100,7 @@ export class DbStorage implements IStorage {
   }
 
   async deleteUser(userId: string): Promise<void> {
-    await db.transaction(async (tx) => {
+    await getDB().transaction(async (tx) => {
       await tx.delete(userBadges).where(eq(userBadges.userId, userId));
       await tx.delete(userStats).where(eq(userStats.userId, userId));
       await tx.delete(beckAnalyses).where(eq(beckAnalyses.userId, userId));
@@ -111,7 +111,7 @@ export class DbStorage implements IStorage {
   }
 
   async updateUserStats(userId: string, statsUpdate: Partial<UserStats>): Promise<UserStats> {
-    const updated = await db.update(userStats)
+    const updated = await getDB().update(userStats)
       .set({ ...statsUpdate, updatedAt: new Date() })
       .where(eq(userStats.userId, userId))
       .returning();
@@ -119,27 +119,27 @@ export class DbStorage implements IStorage {
   }
 
   async getExercises(): Promise<Exercise[]> {
-    return db.select().from(exercises).where(eq(exercises.isActive, true)).orderBy(exercises.title);
+    return getDB().select().from(exercises).where(eq(exercises.isActive, true)).orderBy(exercises.title);
   }
 
   async getAllExercises(): Promise<Exercise[]> {
-    return db.select().from(exercises).orderBy(exercises.title);
+    return getDB().select().from(exercises).orderBy(exercises.title);
   }
 
   async createExercise(insertExercise: InsertExercise): Promise<Exercise> {
-    return db.insert(exercises).values(insertExercise).returning().then(rows => rows[0]);
+    return getDB().insert(exercises).values(insertExercise).returning().then(rows => rows[0]);
   }
 
   async getPsychoEducationContent(): Promise<PsychoEducationContent[]> {
-    return db.select().from(psychoEducationContent).where(eq(psychoEducationContent.isActive, true)).orderBy(psychoEducationContent.title);
+    return getDB().select().from(psychoEducationContent).where(eq(psychoEducationContent.isActive, true)).orderBy(psychoEducationContent.title);
   }
 
   async getAllPsychoEducationContent(): Promise<PsychoEducationContent[]> {
-    return db.select().from(psychoEducationContent).orderBy(psychoEducationContent.title);
+    return getDB().select().from(psychoEducationContent).orderBy(psychoEducationContent.title);
   }
 
   async createPsychoEducationContent(insertContent: InsertPsychoEducationContent): Promise<PsychoEducationContent> {
-    return db.insert(psychoEducationContent).values(insertContent).returning().then(rows => rows[0]);
+    return getDB().insert(psychoEducationContent).values(insertContent).returning().then(rows => rows[0]);
   }
 
   async createCravingEntry(insertEntry: InsertCravingEntry): Promise<CravingEntry> {
@@ -158,13 +158,13 @@ export class DbStorage implements IStorage {
     if (insertEntry.emotions) valuesToInsert.emotions = Array.from(insertEntry.emotions as string[]);
     if (insertEntry.notes) valuesToInsert.notes = insertEntry.notes;
 
-    const newEntry = await db.insert(cravingEntries).values(valuesToInsert).returning().then(rows => rows[0]);
+    const newEntry = await getDB().insert(cravingEntries).values(valuesToInsert).returning().then(rows => rows[0]);
     await this.updateAverageCraving(insertEntry.userId);
     return newEntry;
   }
 
   async getCravingEntries(userId: string, limit = 50): Promise<CravingEntry[]> {
-    return db.select().from(cravingEntries)
+    return getDB().select().from(cravingEntries)
       .where(eq(cravingEntries.userId, userId))
       .orderBy(desc(cravingEntries.createdAt))
       .limit(limit);
@@ -174,7 +174,7 @@ export class DbStorage implements IStorage {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
-    const entries = await db.select().from(cravingEntries)
+    const entries = await getDB().select().from(cravingEntries)
       .where(and(eq(cravingEntries.userId, userId), gte(cravingEntries.createdAt, cutoffDate)))
       .orderBy(cravingEntries.createdAt);
 
@@ -201,7 +201,7 @@ export class DbStorage implements IStorage {
   }
 
   async createExerciseSession(insertSession: InsertExerciseSession): Promise<ExerciseSession> {
-    const session = await db.insert(exerciseSessions).values(insertSession).returning().then(rows => rows[0]);
+    const session = await getDB().insert(exerciseSessions).values(insertSession).returning().then(rows => rows[0]);
 
     if (session.completed) {
       const currentStats = await this.getUserStats(session.userId);
@@ -216,7 +216,7 @@ export class DbStorage implements IStorage {
       if (user) {
         const newPoints = (user.points || 0) + 10;
         const newLevel = Math.floor(newPoints / 100) + 1;
-        await db.update(users).set({ points: newPoints, level: newLevel, updatedAt: new Date() }).where(eq(users.id, session.userId));
+        await getDB().update(users).set({ points: newPoints, level: newLevel, updatedAt: new Date() }).where(eq(users.id, session.userId));
       }
       await this.checkAndAwardBadges(session.userId);
     }
@@ -224,39 +224,39 @@ export class DbStorage implements IStorage {
   }
 
   async getExerciseSessions(userId: string, limit = 50): Promise<ExerciseSession[]> {
-    return db.select().from(exerciseSessions)
+    return getDB().select().from(exerciseSessions)
       .where(eq(exerciseSessions.userId, userId))
       .orderBy(desc(exerciseSessions.createdAt))
       .limit(limit);
   }
 
   async getUserStats(userId: string): Promise<UserStats | undefined> {
-    return db.select().from(userStats).where(eq(userStats.userId, userId)).then(rows => rows[0]);
+    return getDB().select().from(userStats).where(eq(userStats.userId, userId)).then(rows => rows[0]);
   }
 
   async createBeckAnalysis(insertAnalysis: InsertBeckAnalysis): Promise<BeckAnalysis> {
-    return db.insert(beckAnalyses).values(insertAnalysis).returning().then(rows => rows[0]);
+    return getDB().insert(beckAnalyses).values(insertAnalysis).returning().then(rows => rows[0]);
   }
 
   async getBeckAnalyses(userId: string, limit = 20): Promise<BeckAnalysis[]> {
-    return db.select().from(beckAnalyses)
+    return getDB().select().from(beckAnalyses)
       .where(eq(beckAnalyses.userId, userId))
       .orderBy(desc(beckAnalyses.createdAt))
       .limit(limit);
   }
 
   async getUserBadges(userId: string): Promise<UserBadge[]> {
-    return db.select().from(userBadges).where(eq(userBadges.userId, userId)).orderBy(desc(userBadges.earnedAt));
+    return getDB().select().from(userBadges).where(eq(userBadges.userId, userId)).orderBy(desc(userBadges.earnedAt));
   }
 
   async awardBadge(insertBadge: InsertUserBadge): Promise<UserBadge> {
-    const existingBadge = await db.select().from(userBadges)
+    const existingBadge = await getDB().select().from(userBadges)
       .where(and(eq(userBadges.userId, insertBadge.userId), eq(userBadges.badgeType, insertBadge.badgeType)))
       .then(rows => rows[0]);
 
     if (existingBadge) return existingBadge;
 
-    return db.insert(userBadges).values(insertBadge).returning().then(rows => rows[0]);
+    return getDB().insert(userBadges).values(insertBadge).returning().then(rows => rows[0]);
   }
 
   async checkAndAwardBadges(userId: string): Promise<UserBadge[]> {

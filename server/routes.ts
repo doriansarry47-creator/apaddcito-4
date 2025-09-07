@@ -4,14 +4,14 @@ import { storage } from "./storage.js";
 import { AuthService, requireAuth, requireAdmin } from "./auth.js";
 import { insertCravingEntrySchema, insertExerciseSessionSchema, insertBeckAnalysisSchema, insertUserSchema, insertExerciseSchema, insertPsychoEducationContentSchema } from "../shared/schema.js";
 import { z } from "zod";
-import { db } from './db.js';
+import { getDB } from './db.js';
 import { sql } from 'drizzle-orm';
 
 export function registerRoutes(app: Express) {
 
   app.get("/api/test-db", async (_req, res) => {
     try {
-      const result = await db.execute(sql`SELECT 1 as one`);
+      const result = await getDB().execute(sql`SELECT 1 as one`);
       res.json({ ok: true, result: result.rows });
     } catch (e) {
       console.error("Database connection test failed:", e);
