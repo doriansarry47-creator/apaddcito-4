@@ -102,6 +102,14 @@ app.get('/api/data', async (_req, res) => {
   }
 });
 
+// === STATIC FILE SERVING ===
+app.use(express.static('dist/public'));
+
+// === SPA CATCH-ALL ROUTE ===
+app.get('*', (_req, res) => {
+  res.sendFile('index.html', { root: 'dist/public' });
+});
+
 // === MIDDLEWARE DE GESTION D'ERREURS ===
 app.use((err: any, _req: any, res: any, _next: any) => {
   console.error('❌ Erreur serveur:', err);
