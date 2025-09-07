@@ -33,7 +33,7 @@ export default function Login() {
   // ✅ Redirection uniquement si l'utilisateur est connecté
   useEffect(() => {
     if (user && !isLoading) {
-      setLocation("/dashboard"); // change la route cible
+      setLocation("/"); // Redirection vers la page d'accueil (Dashboard)
     }
   }, [user, isLoading, setLocation]);
 
