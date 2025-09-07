@@ -45,8 +45,25 @@ app.use((req, res, next) => {
   next();
 });
 
-// Register API routes
-registerRoutes(app);
+// Create a temporary sub-app to capture API routes with /api prefix
+const apiRouter = express();
+registerRoutes(apiRouter);
+
+// Map routes without /api prefix for Vercel
+app.use((req, res, next) => {
+  // Add /api prefix to the request URL for the existing routes
+  const originalUrl = req.url;
+  req.url = '/api' + req.url;
+  req.path = '/api' + req.path;
+  
+  // Forward to the API router
+  apiRouter(req, res, (err) => {
+    // Restore original URL if not handled
+    req.url = originalUrl;
+    req.path = originalUrl;
+    next(err);
+  });
+});
 
 // ✅ Route de test
 app.get("/", (req, res) => {
