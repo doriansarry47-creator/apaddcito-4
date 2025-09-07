@@ -1,94 +1,42 @@
 // api/index.ts - Vercel Serverless Function Entry Point
-import express, { type Request, Response, NextFunction } from "express";
-import session from "express-session";
-import memorystore from "memorystore";
-import { registerRoutes } from "../server/routes.js";
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-// ✅ N'exige SESSION_SECRET qu'en production
-if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
-  throw new Error("SESSION_SECRET must be set in production");
-}
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-const MemoryStore = memorystore(session);
-app.use(
-  session({
-    store: new MemoryStore({
-      checkPeriod: 86400000, // prune expired entries every 24h
-    }),
-    // ✅ utilise dev-secret par défaut si SESSION_SECRET est absent
-    secret: process.env.SESSION_SECRET || "dev-secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === "production", // HTTPS only en prod
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 semaine
-      sameSite: "lax",
-    },
-  }),
-);
-
-// Simple logging middleware
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    console.log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
-  });
-
-  next();
-});
-
-// Create a temporary sub-app to capture API routes with /api prefix
-const apiRouter = express();
-registerRoutes(apiRouter);
-
-// Map routes without /api prefix for Vercel
-app.use((req, res, next) => {
-  // Add /api prefix to the request URL for the existing routes
-  const originalUrl = req.url;
-  req.url = '/api' + req.url;
-  req.path = '/api' + req.path;
+  const { url } = req;
   
-  // Forward to the API router
-  apiRouter(req, res, (err) => {
-    // Restore original URL if not handled
-    req.url = originalUrl;
-    req.path = originalUrl;
-    next(err);
-  });
-});
+  // Simple routing
+  if (url === '/api/' || url === '/api') {
+    return res.json({ message: '✅ API is running!', timestamp: new Date().toISOString() });
+  }
+  
+  if (url === '/api/health') {
+    return res.json({
+      status: 'ok',
+      message: 'API is running!', 
+      timestamp: new Date().toISOString(),
+      env: process.env.NODE_ENV || 'development'
+    });
+  }
+  
+  if (url === '/api/ping') {
+    return res.json({ message: 'pong 🏓' });
+  }
 
-// ✅ Route de test
-app.get("/", (req, res) => {
-  res.send("✅ API is running!");
-});
-
-// Global error handler
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  const status = err.status || err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
-  console.error(err);
-  res.status(status).json({ message });
-});
-app.get("/ping", (req, res) => {
-  res.json({ message: "pong 🏓" });
-});
-
-app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    message: "API is running!",
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV || "development"
-  });
-});
+  // For now, return 404 for other routes
+  return res.status(404).json({ message: 'API route not found', url });
+}
 
 
 export default app;
