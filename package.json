@@ -19,7 +19,8 @@
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx scripts/seed.ts",
     "quick-check": "tsx scripts/quick-check.ts",
-    "migrate": "tsx server/migrate.ts"
+    "migrate": "tsx server/migrate.ts",
+    "smoke:test": "node tests/smoke-auth.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -118,8 +119,10 @@
     "cross-env": "^10.0.0",
     "drizzle-kit": "^0.30.6",
     "esbuild": "^0.25.0",
+    "got": "^13.0.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.17",
+    "tough-cookie": "^4.1.4",
     "tsx": "^4.20.5",
     "typescript": "^5.6.3",
     "vite": "^5.4.19"

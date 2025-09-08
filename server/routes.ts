@@ -9,6 +9,11 @@ import { sql } from 'drizzle-orm';
 
 export function registerRoutes(app: Express) {
 
+  // Health check endpoint
+  app.get("/api/health", (_req, res) => {
+    res.json({ ok: true, status: "healthy" });
+  });
+
   app.get("/api/test-db", async (_req, res) => {
     try {
       const result = await getDB().execute(sql`SELECT 1 as one`);
