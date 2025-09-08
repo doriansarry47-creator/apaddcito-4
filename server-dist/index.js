@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __esm = (fn, res2) => function __init() {
-  return fn && (res2 = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res2;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
 };
 var __export = (target, all) => {
   for (var name in all)
@@ -757,18 +757,18 @@ var AuthService = class {
     await storage.updatePassword(userId, hashedNewPassword);
   }
 };
-function requireAuth(req, res2, next) {
+function requireAuth(req, res, next) {
   if (!req.session?.user) {
-    return res2.status(401).json({ message: "Authentification requise" });
+    return res.status(401).json({ message: "Authentification requise" });
   }
   next();
 }
-function requireAdmin(req, res2, next) {
+function requireAdmin(req, res, next) {
   if (!req.session?.user) {
-    return res2.status(401).json({ message: "Authentification requise" });
+    return res.status(401).json({ message: "Authentification requise" });
   }
   if (req.session.user.role !== "admin") {
-    return res2.status(403).json({ message: "Acc\xE8s administrateur requis" });
+    return res.status(403).json({ message: "Acc\xE8s administrateur requis" });
   }
   next();
 }
@@ -778,20 +778,20 @@ init_schema();
 init_db();
 import { sql as sql3 } from "drizzle-orm";
 function registerRoutes(app2) {
-  app2.get("/api/test-db", async (_req, res2) => {
+  app2.get("/api/test-db", async (_req, res) => {
     try {
       const result = await getDB().execute(sql3`SELECT 1 as one`);
-      res2.json({ ok: true, result: result.rows });
+      res.json({ ok: true, result: result.rows });
     } catch (e) {
       console.error("Database connection test failed:", e);
-      res2.status(500).json({ ok: false, error: e instanceof Error ? e.message : String(e) });
+      res.status(500).json({ ok: false, error: e instanceof Error ? e.message : String(e) });
     }
   });
-  app2.post("/api/auth/register", async (req, res2) => {
+  app2.post("/api/auth/register", async (req, res) => {
     try {
       const { email, password, firstName, lastName, role } = req.body;
       if (!email || !password) {
-        return res2.status(400).json({ message: "Email et mot de passe requis" });
+        return res.status(400).json({ message: "Email et mot de passe requis" });
       }
       const user = await AuthService.register({
         email,
@@ -801,247 +801,247 @@ function registerRoutes(app2) {
         role
       });
       req.session.user = user;
-      res2.json({ user });
+      res.json({ user });
     } catch (error) {
-      res2.status(400).json({
+      res.status(400).json({
         message: error instanceof Error ? error.message : "Erreur lors de l'inscription"
       });
     }
   });
-  app2.post("/api/auth/login", async (req, res2) => {
+  app2.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
       if (!email || !password) {
-        return res2.status(400).json({ message: "Email et mot de passe requis" });
+        return res.status(400).json({ message: "Email et mot de passe requis" });
       }
       const user = await AuthService.login(email, password);
       req.session.user = user;
-      res2.json({ user });
+      res.json({ user });
     } catch (error) {
-      res2.status(401).json({
+      res.status(401).json({
         message: error instanceof Error ? error.message : "Erreur de connexion"
       });
     }
   });
-  app2.post("/api/auth/logout", (req, res2) => {
-    req.session.destroy((err2) => {
-      if (err2) {
-        return res2.status(500).json({ message: "Erreur lors de la d\xE9connexion" });
+  app2.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Erreur lors de la d\xE9connexion" });
       }
-      res2.json({ message: "Logout successful" });
+      res.json({ message: "Logout successful" });
     });
   });
-  app2.get("/api/auth/me", async (req, res2) => {
+  app2.get("/api/auth/me", async (req, res) => {
     if (!req.session || !req.session.user) {
-      return res2.json({ user: null });
+      return res.json({ user: null });
     }
     const user = await AuthService.getUserById(req.session.user.id);
-    res2.json({ user });
+    res.json({ user });
   });
-  app2.get("/api/exercises", async (req, res2) => {
+  app2.get("/api/exercises", async (req, res) => {
     try {
       const exercises2 = await storage.getExercises();
-      res2.json(exercises2);
+      res.json(exercises2);
     } catch (error) {
-      res2.status(500).json({ message: "Erreur lors de la r\xE9cup\xE9ration des exercices" });
+      res.status(500).json({ message: "Erreur lors de la r\xE9cup\xE9ration des exercices" });
     }
   });
-  app2.post("/api/exercises", requireAdmin, async (req, res2) => {
+  app2.post("/api/exercises", requireAdmin, async (req, res) => {
     try {
       const data = insertExerciseSchema.parse(req.body);
       const exercise = await storage.createExercise(data);
-      res2.json(exercise);
+      res.json(exercise);
     } catch (error) {
-      res2.status(400).json({ message: error instanceof Error ? error.message : "Validation \xE9chou\xE9e" });
+      res.status(400).json({ message: error instanceof Error ? error.message : "Validation \xE9chou\xE9e" });
     }
   });
-  app2.get("/api/psycho-education", async (req, res2) => {
+  app2.get("/api/psycho-education", async (req, res) => {
     try {
       const content = await storage.getPsychoEducationContent();
-      res2.json(content);
+      res.json(content);
     } catch (error) {
-      res2.status(500).json({ message: "Erreur lors de la r\xE9cup\xE9ration du contenu" });
+      res.status(500).json({ message: "Erreur lors de la r\xE9cup\xE9ration du contenu" });
     }
   });
-  app2.post("/api/psycho-education", requireAdmin, async (req, res2) => {
+  app2.post("/api/psycho-education", requireAdmin, async (req, res) => {
     try {
       const data = insertPsychoEducationContentSchema.parse(req.body);
       const content = await storage.createPsychoEducationContent(data);
-      res2.json(content);
+      res.json(content);
     } catch (error) {
-      res2.status(400).json({ message: error instanceof Error ? error.message : "Validation \xE9chou\xE9e" });
+      res.status(400).json({ message: error instanceof Error ? error.message : "Validation \xE9chou\xE9e" });
     }
   });
-  app2.get("/api/admin/exercises", requireAdmin, async (req, res2) => {
+  app2.get("/api/admin/exercises", requireAdmin, async (req, res) => {
     try {
       const exercises2 = await storage.getAllExercises();
-      res2.json(exercises2);
+      res.json(exercises2);
     } catch (error) {
-      res2.status(500).json({ message: "Failed to fetch all exercises" });
+      res.status(500).json({ message: "Failed to fetch all exercises" });
     }
   });
-  app2.get("/api/admin/psycho-education", requireAdmin, async (req, res2) => {
+  app2.get("/api/admin/psycho-education", requireAdmin, async (req, res) => {
     try {
       const content = await storage.getAllPsychoEducationContent();
-      res2.json(content);
+      res.json(content);
     } catch (error) {
-      res2.status(500).json({ message: "Failed to fetch all psycho-education content" });
+      res.status(500).json({ message: "Failed to fetch all psycho-education content" });
     }
   });
-  app2.post("/api/cravings", requireAuth, async (req, res2) => {
+  app2.post("/api/cravings", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const data = insertCravingEntrySchema.parse({
         ...req.body,
         userId: req.session.user.id
       });
       const entry = await storage.createCravingEntry(data);
-      res2.json(entry);
+      res.json(entry);
     } catch (error) {
-      res2.status(400).json({ message: error instanceof Error ? error.message : "Validation failed" });
+      res.status(400).json({ message: error instanceof Error ? error.message : "Validation failed" });
     }
   });
-  app2.get("/api/cravings", requireAuth, async (req, res2) => {
+  app2.get("/api/cravings", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const limit = req.query.limit ? parseInt(req.query.limit) : void 0;
       const entries = await storage.getCravingEntries(userId, limit);
-      res2.json(entries);
+      res.json(entries);
     } catch (error) {
-      res2.status(500).json({ message: "Failed to fetch craving entries" });
+      res.status(500).json({ message: "Failed to fetch craving entries" });
     }
   });
-  app2.get("/api/cravings/stats", requireAuth, async (req, res2) => {
+  app2.get("/api/cravings/stats", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const days = req.query.days ? parseInt(req.query.days) : void 0;
       const stats = await storage.getCravingStats(userId, days);
-      res2.json(stats);
+      res.json(stats);
     } catch (error) {
-      res2.status(500).json({ message: "Failed to fetch craving stats" });
+      res.status(500).json({ message: "Failed to fetch craving stats" });
     }
   });
-  app2.post("/api/exercise-sessions", requireAuth, async (req, res2) => {
+  app2.post("/api/exercise-sessions", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const data = insertExerciseSessionSchema.parse({
         ...req.body,
         userId: req.session.user.id
       });
       const session2 = await storage.createExerciseSession(data);
-      res2.json(session2);
+      res.json(session2);
     } catch (error) {
-      res2.status(400).json({ message: error instanceof Error ? error.message : "Validation failed" });
+      res.status(400).json({ message: error instanceof Error ? error.message : "Validation failed" });
     }
   });
-  app2.get("/api/exercise-sessions", requireAuth, async (req, res2) => {
+  app2.get("/api/exercise-sessions", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const limit = req.query.limit ? parseInt(req.query.limit) : void 0;
       const sessions = await storage.getExerciseSessions(userId, limit);
-      res2.json(sessions);
+      res.json(sessions);
     } catch (error) {
-      res2.status(500).json({ message: "Failed to fetch exercise sessions" });
+      res.status(500).json({ message: "Failed to fetch exercise sessions" });
     }
   });
-  app2.post("/api/beck-analyses", requireAuth, async (req, res2) => {
+  app2.post("/api/beck-analyses", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const data = insertBeckAnalysisSchema.parse({
         ...req.body,
         userId: req.session.user.id
       });
       const analysis = await storage.createBeckAnalysis(data);
-      res2.json(analysis);
+      res.json(analysis);
     } catch (error) {
-      res2.status(400).json({ message: error instanceof Error ? error.message : "Validation failed" });
+      res.status(400).json({ message: error instanceof Error ? error.message : "Validation failed" });
     }
   });
-  app2.get("/api/beck-analyses", requireAuth, async (req, res2) => {
+  app2.get("/api/beck-analyses", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const limit = req.query.limit ? parseInt(req.query.limit) : void 0;
       const analyses = await storage.getBeckAnalyses(userId, limit);
-      res2.json(analyses);
+      res.json(analyses);
     } catch (error) {
-      res2.status(500).json({ message: "Failed to fetch Beck analyses" });
+      res.status(500).json({ message: "Failed to fetch Beck analyses" });
     }
   });
-  app2.get("/api/users/stats", requireAuth, async (req, res2) => {
+  app2.get("/api/users/stats", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const stats = await storage.getUserStats(userId);
-      res2.json(stats);
+      res.json(stats);
     } catch (error) {
-      res2.status(500).json({ message: "Failed to fetch user stats" });
+      res.status(500).json({ message: "Failed to fetch user stats" });
     }
   });
-  app2.get("/api/users/badges", requireAuth, async (req, res2) => {
+  app2.get("/api/users/badges", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const badges = await storage.getUserBadges(userId);
-      res2.json(badges);
+      res.json(badges);
     } catch (error) {
-      res2.status(500).json({ message: "Failed to fetch user badges" });
+      res.status(500).json({ message: "Failed to fetch user badges" });
     }
   });
-  app2.get("/api/users/profile", requireAuth, async (req, res2) => {
+  app2.get("/api/users/profile", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const user = await storage.getUser(userId);
       if (!user) {
-        return res2.status(404).json({ message: "User not found" });
+        return res.status(404).json({ message: "User not found" });
       }
-      res2.json(user);
+      res.json(user);
     } catch (error) {
-      res2.status(500).json({ message: "Failed to fetch user" });
+      res.status(500).json({ message: "Failed to fetch user" });
     }
   });
-  app2.put("/api/users/profile", requireAuth, async (req, res2) => {
+  app2.put("/api/users/profile", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const { firstName, lastName, email } = req.body;
       const updatedUser = await AuthService.updateUser(userId, { firstName, lastName, email });
-      res2.json(updatedUser);
+      res.json(updatedUser);
     } catch (error) {
-      res2.status(400).json({ message: error instanceof Error ? error.message : "Erreur lors de la mise \xE0 jour du profil" });
+      res.status(400).json({ message: error instanceof Error ? error.message : "Erreur lors de la mise \xE0 jour du profil" });
     }
   });
-  app2.put("/api/users/password", requireAuth, async (req, res2) => {
+  app2.put("/api/users/password", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       const { oldPassword, newPassword } = req.body;
       await AuthService.updatePassword(userId, oldPassword, newPassword);
-      res2.json({ message: "Mot de passe mis \xE0 jour avec succ\xE8s" });
+      res.json({ message: "Mot de passe mis \xE0 jour avec succ\xE8s" });
     } catch (error) {
-      res2.status(400).json({ message: error instanceof Error ? error.message : "Erreur lors de la mise \xE0 jour du mot de passe" });
+      res.status(400).json({ message: error instanceof Error ? error.message : "Erreur lors de la mise \xE0 jour du mot de passe" });
     }
   });
-  app2.delete("/api/users/profile", requireAuth, async (req, res2) => {
+  app2.delete("/api/users/profile", requireAuth, async (req, res) => {
     try {
-      if (!req.session?.user) return res2.status(401).json({ message: "Session non valide" });
+      if (!req.session?.user) return res.status(401).json({ message: "Session non valide" });
       const userId = req.session.user.id;
       await storage.deleteUser(userId);
-      req.session.destroy((err2) => {
-        if (err2) {
-          return res2.status(500).json({ message: "Erreur lors de la d\xE9connexion apr\xE8s la suppression du compte" });
+      req.session.destroy((err) => {
+        if (err) {
+          return res.status(500).json({ message: "Erreur lors de la d\xE9connexion apr\xE8s la suppression du compte" });
         }
-        res2.json({ message: "Compte supprim\xE9 avec succ\xE8s" });
+        res.json({ message: "Compte supprim\xE9 avec succ\xE8s" });
       });
     } catch (error) {
-      res2.status(500).json({ message: "Erreur lors de la suppression du compte" });
+      res.status(500).json({ message: "Erreur lors de la suppression du compte" });
     }
   });
-  app2.post("/api/demo-user", async (req, res2) => {
+  app2.post("/api/demo-user", async (req, res) => {
     try {
       const user = await storage.createUser({
         email: "demo@example.com",
@@ -1050,18 +1050,18 @@ function registerRoutes(app2) {
         lastName: "Demo",
         role: "patient"
       });
-      res2.json(user);
+      res.json(user);
     } catch (error) {
-      res2.status(500).json({ message: "Failed to create demo user" });
+      res.status(500).json({ message: "Failed to create demo user" });
     }
   });
-  app2.post("/api/seed-data", requireAdmin, async (req, res2) => {
+  app2.post("/api/seed-data", requireAdmin, async (req, res) => {
     try {
       const { seedData: seedData2 } = await Promise.resolve().then(() => (init_seed_data(), seed_data_exports));
       await seedData2();
-      res2.json({ message: "Donn\xE9es d'exemple cr\xE9\xE9es avec succ\xE8s" });
+      res.json({ message: "Donn\xE9es d'exemple cr\xE9\xE9es avec succ\xE8s" });
     } catch (error) {
-      res2.status(500).json({ message: "Erreur lors de la cr\xE9ation des donn\xE9es d'exemple" });
+      res.status(500).json({ message: "Erreur lors de la cr\xE9ation des donn\xE9es d'exemple" });
     }
   });
 }
@@ -1109,7 +1109,7 @@ function ensureDbUrl() {
 function makePool() {
   return new Pool3({ connectionString: ensureDbUrl() });
 }
-debugTablesRouter.get("/debug/tables", async (_req, res2) => {
+debugTablesRouter.get("/debug/tables", async (_req, res) => {
   const pool3 = makePool();
   try {
     const tables = await pool3.query(`
@@ -1118,14 +1118,14 @@ debugTablesRouter.get("/debug/tables", async (_req, res2) => {
       WHERE table_schema = 'public'
       ORDER BY table_name;
     `);
-    res2.json({ tables: tables.rows.map((r) => r.table_name) });
+    res.json({ tables: tables.rows.map((r) => r.table_name) });
   } catch (e) {
-    res2.status(500).json({ error: e.message });
+    res.status(500).json({ error: e.message });
   } finally {
     await pool3.end();
   }
 });
-debugTablesRouter.get("/debug/tables/counts", async (_req, res2) => {
+debugTablesRouter.get("/debug/tables/counts", async (_req, res) => {
   const pool3 = makePool();
   try {
     const tables = await pool3.query(`
@@ -1140,16 +1140,16 @@ debugTablesRouter.get("/debug/tables/counts", async (_req, res2) => {
       const count = await pool3.query(`SELECT COUNT(*)::int AS c FROM "${tableName}";`);
       out[tableName] = count.rows[0].c;
     }
-    res2.json(out);
+    res.json(out);
   } catch (e) {
-    res2.status(500).json({ error: e.message });
+    res.status(500).json({ error: e.message });
   } finally {
     await pool3.end();
   }
 });
-debugTablesRouter.delete("/debug/tables/purge", async (_req, res2) => {
+debugTablesRouter.delete("/debug/tables/purge", async (_req, res) => {
   if (process.env.NODE_ENV === "production") {
-    return res2.status(403).json({ error: "Purge interdite en production" });
+    return res.status(403).json({ error: "Purge interdite en production" });
   }
   const pool3 = makePool();
   try {
@@ -1164,9 +1164,9 @@ debugTablesRouter.delete("/debug/tables/purge", async (_req, res2) => {
       const tableName = row.table_name;
       await pool3.query(`TRUNCATE TABLE "${tableName}" RESTART IDENTITY CASCADE;`);
     }
-    res2.json({ ok: true });
+    res.json({ ok: true });
   } catch (e) {
-    res2.status(500).json({ error: e.message });
+    res.status(500).json({ error: e.message });
   } finally {
     await pool3.end();
   }
@@ -1208,20 +1208,19 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(vercelSessionMiddleware);
-app.get("/", (_req, res2) => {
-  res2.send("API Apaddcito est en ligne !");
-  res2.json({
-    message: "\u2705 API Apaddicto est en ligne sur Vercel!",
+app.get("/api/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    message: "API is running!",
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
     env: process.env.NODE_ENV || "production"
   });
 });
-app.get("/api/health", (_req, res2) => {
-  res2.json({
-    status: "ok",
-    message: "API is running on Vercel!",
+app.get("/api/status", (_req, res) => {
+  res.json({
+    message: "\u2705 API Apaddicto est en ligne!",
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    env: process.env.NODE_ENV
+    env: process.env.NODE_ENV || "production"
   });
 });
 registerRoutes(app);
@@ -1233,7 +1232,7 @@ var pool2 = new Pool4({
   password: process.env.DB_PASSWORD || "ton_mot_de_passe",
   port: Number(process.env.DB_PORT) || 5432
 });
-app.get("/api/tables", async (_req, res2) => {
+app.get("/api/tables", async (_req, res) => {
   try {
     const result = await pool2.query(`
       SELECT table_name
@@ -1241,13 +1240,13 @@ app.get("/api/tables", async (_req, res2) => {
       WHERE table_schema = 'public'
       ORDER BY table_name;
     `);
-    res2.json(result.rows.map((r) => r.table_name));
-  } catch (err2) {
-    console.error(err2);
-    res2.status(500).json({ message: "Erreur serveur" });
+    res.json(result.rows.map((r) => r.table_name));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 });
-app.get("/api/data", async (_req, res2) => {
+app.get("/api/data", async (_req, res) => {
   try {
     const tables = [
       "beck_analyses",
@@ -1264,31 +1263,25 @@ app.get("/api/data", async (_req, res2) => {
       const result = await pool2.query(`SELECT * FROM ${table};`);
       data[table] = result.rows;
     }
-    res2.json(data);
-  } catch (err2) {
-    console.error(err2);
-    res2.status(500).json({ message: "Erreur serveur" });
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 });
-app.use((err2, _req, res2, _next) => {
-  console.error("\u274C Erreur serveur:", err2);
-  res2.status(500).json({ message: "Erreur interne" });
-});
-console.log("Routes disponibles :");
-app._router.stack.forEach((r) => {
-  if (r.route && r.route.path) {
-    console.log(r.route.path);
-  }
-  console.error("\u274C Erreur serveur Vercel:", err);
+app.use((err, _req, res, _next) => {
+  console.error("\u274C Erreur serveur:", err);
   res.status(500).json({
     message: "Erreur interne du serveur",
     error: process.env.NODE_ENV === "development" ? err.message : "Internal error"
   });
 });
-var port = Number(process.env.PORT) || 3e3;
-app.listen(port, "0.0.0.0", () => {
-  console.log(`\u{1F680} Server running at http://localhost:${port}`);
-});
+var PORT = Number(process.env.PORT) || 3e3;
+if (!process.env.VERCEL) {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`\u{1F680} Server running at http://localhost:${PORT}`);
+  });
+}
 var index_default = app;
 export {
   index_default as default

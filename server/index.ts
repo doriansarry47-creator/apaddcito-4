@@ -32,22 +32,21 @@ app.use(express.json());
 app.use(vercelSessionMiddleware);
 
 // === ENDPOINTS DE BASE ===
-// Endpoints de base
-app.get('/', (_req, res) => {
-  res.send('API Apaddcito est en ligne !');
+// API health endpoint (under /api path)
+app.get('/api/health', (_req, res) => {
   res.json({
-    message: '✅ API Apaddicto est en ligne sur Vercel!',
+    status: 'ok',
+    message: 'API is running!', 
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV || 'production'
   });
 });
 
-app.get('/api/health', (_req, res) => {
+app.get('/api/status', (_req, res) => {
   res.json({
-    status: 'ok',
-    message: 'API is running on Vercel!', 
+    message: '✅ API Apaddicto est en ligne!',
     timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV
+    env: process.env.NODE_ENV || 'production'
   });
 });
 
@@ -110,16 +109,6 @@ app.get('/api/data', async (_req, res) => {
 // Middleware de gestion d'erreurs
 app.use((err: any, _req: any, res: any, _next: any) => {
   console.error('❌ Erreur serveur:', err);
-  res.status(500).json({ message: 'Erreur interne' });
-});
-
-// === DEBUG ROUTES DISPONIBLES ===
-console.log("Routes disponibles :");
-app._router.stack.forEach((r: any) => {
-  if (r.route && r.route.path) {
-    console.log(r.route.path);
-  }
-  console.error('❌ Erreur serveur Vercel:', err);
   res.status(500).json({ 
     message: 'Erreur interne du serveur',
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal error'
@@ -127,10 +116,13 @@ app._router.stack.forEach((r: any) => {
 });
 
 // === LANCEMENT DU SERVEUR ===
-const port = Number(process.env.PORT) || 3000;
-app.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Server running at http://localhost:${port}`);
-});
+// Only run server locally, not on Vercel serverless
+const PORT = Number(process.env.PORT) || 3000;
+if (!process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+  });
+}
 
 // Export par défaut pour Vercel
 export default app;
