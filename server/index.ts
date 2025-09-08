@@ -1,11 +1,11 @@
 import 'dotenv/config';
 import express from 'express';
-import session from 'express-session';
 import cors from 'cors';
 import { registerRoutes } from './routes.js';
 import './migrate.js';
 import { debugTablesRouter } from './debugTables.js';
 import { Pool } from 'pg';
+import { vercelSessionMiddleware } from './vercel-session.js';
 
 // === INITIALISATION EXPRESS ===
 const app = express();
@@ -21,16 +21,7 @@ app.use(cors({
 app.use(express.json());
 
 // === SESSION ===
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'fallback-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-  },
-}));
+app.use(vercelSessionMiddleware);
 
 // === ENDPOINTS DE BASE ===
 app.get('/', (_req, res) => {

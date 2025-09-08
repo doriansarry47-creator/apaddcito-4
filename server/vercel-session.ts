@@ -13,8 +13,8 @@ export function getSessionConfig(): SessionOptions {
       secure: process.env.NODE_ENV === 'production', // HTTPS en prod
       httpOnly: true, // Protection contre XSS
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 jours
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Important pour Vercel
-      domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax', // Changé de 'none' à 'lax' pour éviter les problèmes de cookies
+      domain: undefined // Toujours undefined pour éviter les problèmes de domaine
     }
   };
 }

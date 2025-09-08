@@ -51,7 +51,9 @@ export function useAuthQuery() {
   return useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => {
-      const response = await fetch("/api/auth/me");
+      const response = await fetch("/api/auth/me", {
+        credentials: 'include' // Important pour maintenir les sessions
+      });
       if (!response.ok) {
         if (response.status === 401) {
           return null;
@@ -76,6 +78,7 @@ export function useLoginMutation() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include', // Important pour maintenir les sessions
         body: JSON.stringify({ email, password }),
       });
 
@@ -110,6 +113,7 @@ export function useRegisterMutation() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include', // Important pour maintenir les sessions
         body: JSON.stringify(userData),
       });
 
@@ -135,6 +139,7 @@ export function useLogoutMutation() {
     mutationFn: async () => {
       const response = await fetch("/api/auth/logout", {
         method: "POST",
+        credentials: 'include', // Important pour maintenir les sessions
       });
 
       const data = await safeJson(response);
