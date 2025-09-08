@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { data: user, isLoading } = useAuthQuery();
+  const { data: user, isLoading, error } = useAuthQuery();
 
   if (isLoading) {
     // You can render a loading spinner here
@@ -18,7 +18,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!user) {
+  // If there's an error or no user, redirect to login
+  if (error || !user) {
     // User is not authenticated, redirect to login
     return <Redirect to="/login" />;
   }
