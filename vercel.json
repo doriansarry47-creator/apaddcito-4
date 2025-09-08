@@ -31,7 +31,8 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/index.html"
+      "dest": "/dist/index.html",
+      "continue": true
     }
   ]
 }
