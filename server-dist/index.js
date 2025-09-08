@@ -1274,7 +1274,7 @@ app._router.stack.forEach((r) => {
     console.log(r.route.path);
   }
 });
-var port = process.env.PORT || 3e3;
+var port = Number(process.env.PORT) || 3e3;
 app.listen(port, "0.0.0.0", () => {
   console.log(`\u{1F680} Server running at http://localhost:${port}`);
 });
