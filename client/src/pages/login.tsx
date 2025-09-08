@@ -33,7 +33,11 @@ export default function Login() {
   // ✅ Redirection uniquement si l'utilisateur est connecté
   useEffect(() => {
     if (user && !isLoading) {
-      setLocation("/"); // Redirection vers la page d'accueil (Dashboard)
+      // Redirection vers la page d'accueil (Dashboard) après un court délai pour s'assurer du rendu
+      const timer = setTimeout(() => {
+        setLocation("/");
+      }, 100); // Délai de 100ms
+      return () => clearTimeout(timer);
     }
   }, [user, isLoading, setLocation]);
 
