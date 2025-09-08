@@ -27,12 +27,8 @@
       "dest": "/server/index.ts"
     },
     {
-      "handle": "filesystem"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/dist/index.html",
-      "continue": true
+      "dest": "/dist/index.html"
     }
   ]
 }
