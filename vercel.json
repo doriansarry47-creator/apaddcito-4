@@ -2,10 +2,12 @@
   "version": 2,
   "functions": {
     "api/index.js": {
-      "runtime": "@vercel/node@3.2.15"
+      "runtime": "@vercel/node@3.2.15",
+      "src": "server-dist/index.js"
     },
     "api/migrate.js": {
-      "runtime": "@vercel/node@3.2.15"
+      "runtime": "@vercel/node@3.2.15",
+      "src": "server-dist/migrate.js"
     }
   },
   "builds": [
@@ -24,7 +26,7 @@
     },
     {
       "src": "/api/(.*)",
-      "dest": "/api/index.js"
+      "dest": "/server-dist/index.js"
     },
     {
       "handle": "filesystem"

@@ -1271,8 +1271,8 @@ app.get("/api/data", async (_req, res) => {
   }
 });
 app.use((err, _req, res, _next) => {
-  console.error("\u274C Erreur serveur:", err);
-  res.status(500).json({ message: "Erreur interne" });
+  console.error("\u274C Erreur serveur:", err.message);
+  res.status(500).json({ message: "Erreur interne", error: err.message });
 });
 console.log("Routes disponibles :");
 app._router.stack.forEach((r) => {

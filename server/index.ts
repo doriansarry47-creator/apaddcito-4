@@ -108,9 +108,9 @@ app.get('/api/data', async (_req, res) => {
 
 // === MIDDLEWARE DE GESTION D'ERREURS ===
 // Middleware de gestion d'erreurs
-app.use((err: any, _req: any, res: any, _next: any) => {
-  console.error('❌ Erreur serveur:', err);
-  res.status(500).json({ message: 'Erreur interne' });
+app.use((err: Error, _req: any, res: any, _next: any) => {
+  console.error('❌ Erreur serveur:', err.message);
+  res.status(500).json({ message: 'Erreur interne', error: err.message });
 });
 
 // === DEBUG ROUTES DISPONIBLES ===
