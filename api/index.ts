@@ -3,10 +3,10 @@ import 'dotenv/config';
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
-import { registerRoutes } from '../server-dist/routes.js';
-import '../server-dist/migrate.js';
-import { debugTablesRouter } from '../server-dist/debugTables.js';
-import { vercelSessionMiddleware } from '../server-dist/vercel-session.js';
+import { registerRoutes } from '../server/routes';
+import '../server/migrate';
+import { debugTablesRouter } from '../server/debugTables';
+import { vercelSessionMiddleware } from '../server/vercel-session';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Créer l'application Express
