@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "package.json",
+      "src": "client/index.html",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "dist"
@@ -11,25 +11,19 @@
     {
       "src": "server/index.ts",
       "use": "@vercel/node"
-    },
-    {
-      "src": "api/migrate.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
-    {
-      "src": "/api/migrate",
-      "dest": "/api/migrate.js"
-    },
     {
       "src": "/api/(.*)",
       "dest": "/server/index.ts"
     },
     {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/dist/index.html",
-      "status": 200
+      "dest": "/client/index.html"
     }
   ]
 }

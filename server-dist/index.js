@@ -643,6 +643,7 @@ var init_seed_data = __esm({
 // server/index.ts
 import "dotenv/config";
 import express from "express";
+import session from "express-session";
 import cors from "cors";
 
 // server/routes.ts
@@ -1174,32 +1175,6 @@ debugTablesRouter.delete("/debug/tables/purge", async (_req, res) => {
 
 // server/index.ts
 import { Pool as Pool4 } from "pg";
-
-// server/vercel-session.ts
-import session from "express-session";
-function getSessionConfig() {
-  return {
-    secret: process.env.SESSION_SECRET || "fallback-secret-key-vercel-production",
-    resave: false,
-    saveUninitialized: false,
-    name: "apaddicto.sid",
-    cookie: {
-      secure: process.env.NODE_ENV === "production",
-      // HTTPS en prod
-      httpOnly: true,
-      // Protection contre XSS
-      maxAge: 1e3 * 60 * 60 * 24 * 7,
-      // 7 jours
-      sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
-      // Changé de 'none' à 'lax' pour éviter les problèmes de cookies
-      domain: void 0
-      // Toujours undefined pour éviter les problèmes de domaine
-    }
-  };
-}
-var vercelSessionMiddleware = session(getSessionConfig());
-
-// server/index.ts
 var app = express();
 var CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 app.use(cors({
@@ -1207,7 +1182,16 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use(vercelSessionMiddleware);
+app.use(session({
+  secret: process.env.SESSION_SECRET || "fallback-secret",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 1e3 * 60 * 60 * 24 * 7
+  }
+}));
 app.get("/", (_req, res) => {
   res.send("API Apaddcito est en ligne !");
 });
