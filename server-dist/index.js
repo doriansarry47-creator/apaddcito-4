@@ -1210,10 +1210,16 @@ app.use(express.json());
 app.use(vercelSessionMiddleware);
 app.get("/", (_req, res) => {
   res.send("API Apaddcito est en ligne !");
+  res.json({
+    message: "\u2705 API Apaddicto est en ligne sur Vercel!",
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    env: process.env.NODE_ENV || "production"
+  });
 });
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
+    message: "API is running on Vercel!",
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
     env: process.env.NODE_ENV
   });
@@ -1278,3 +1284,7 @@ var port = Number(process.env.PORT) || 3e3;
 app.listen(port, "0.0.0.0", () => {
   console.log(`\u{1F680} Server running at http://localhost:${port}`);
 });
+var index_default = app;
+export {
+  index_default as default
+};
