@@ -1,0 +1,20 @@
+// server/vercel-session.ts
+import session from 'express-session';
+// Configuration de session optimisée pour Vercel
+export function getSessionConfig() {
+    return {
+        secret: process.env.SESSION_SECRET || 'fallback-secret-key-vercel-production',
+        resave: false,
+        saveUninitialized: false,
+        name: 'apaddicto.sid',
+        cookie: {
+            secure: process.env.NODE_ENV === 'production', // HTTPS en prod
+            httpOnly: true, // Protection contre XSS
+            maxAge: 1000 * 60 * 60 * 24 * 7, // 7 jours
+            sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax', // Changé de 'none' à 'lax' pour éviter les problèmes de cookies
+            domain: undefined // Toujours undefined pour éviter les problèmes de domaine
+        }
+    };
+}
+// Middleware de session configuré pour Vercel
+export var vercelSessionMiddleware = session(getSessionConfig());
